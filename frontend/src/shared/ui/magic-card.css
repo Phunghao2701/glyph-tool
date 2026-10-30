@@ -1,0 +1,30 @@
+.magic-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: linear-gradient(var(--magic-card-surface, var(--paper, #fffefa)) 0 0) padding-box,
+    linear-gradient(var(--magic-card-border, var(--line, #dfe3dc)), var(--magic-card-border, var(--line, #dfe3dc))) border-box;
+}
+
+.magic-card-static {
+  background: var(--magic-card-surface, var(--paper, #fffefa));
+  border-color: var(--magic-card-border, var(--line, #dfe3dc));
+}
+
+.magic-card-spotlight {
+  position: absolute;
+  z-index: 0;
+  inset: 1px;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+
+.magic-card:hover .magic-card-spotlight { opacity: 1; }
+.magic-card-content { position: relative; z-index: 1; min-width: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .magic-card-spotlight { display: none; transition: none; }
+}

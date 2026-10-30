@@ -354,7 +354,7 @@ def generate_initial_variants(
         kerned_otf.replace(final_otf)
         if "GSUB" in TTFont(final_otf):
             _run("sortfeat.py", final_otf, cwd=work)
-        stamp_env = {"FAMILY": f"VFK - {font['name'].getDebugName(1) or source.stem}"}
+        stamp_env = {"FAMILY": font["name"].getDebugName(1) or source.stem}
         _run("stamp.py", final_otf, "1.001", f"1{label}", cwd=work, env=stamp_env)
         _run("winfix.py", final_otf, cwd=work)
         word = _run("kiemword.py", final_otf, "--fix", cwd=work)
@@ -362,7 +362,7 @@ def generate_initial_variants(
             raise FontPipelineError(f"Word validation did not pass for VER 1{label}: {word[-2000:]}")
         _require_ots(final_otf, f"VER 1{label} intermediate OTF")
         if source_format == "ttf":
-            final_font = work / f"VFK-{source.stem}.ttf"
+            final_font = work / f"{source.stem}-Vietnamese.ttf"
             _run("otf2ttf.py", final_otf, source, src_otf, final_font, cwd=work)
             _run("winfix.py", final_font, cwd=work)
             word = _run("kiemword.py", final_font, "--fix", cwd=work)

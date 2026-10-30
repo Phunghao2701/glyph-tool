@@ -7,6 +7,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
+import shutil
 
 from .ai_design import build_initial_style_profile, refine_variant_style
 from .db import EXPORTS_ROOT, PROJECTS_ROOT, db, job_payload, json_load, now
@@ -22,6 +23,47 @@ log = logging.getLogger("viet-font-tool.jobs")
 _POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="font-job")
 
 
+class JobCancelled(Exception):
+    pass
+
+
+JOB_LABELS = {
+    "analyze": "Analyze source font",
+    "generate_initial": "Generate VER options",
+    "refine_variant": "Refine VER option with AI",
+    "build_revision": "Build glyph revision",
+    "validate": "Validate font revision",
+    "export": "Export font",
+}
+
+
+def _check_cancelled(job_id: str) -> None:
+    with db() as conn:
+        row = conn.execute("SELECT status,cancel_requested FROM jobs WHERE id=?", (job_id,)).fetchone()
+    if not row or row["cancel_requested"] or row["status"] in {"cancelling", "cancelled"}:
+        raise JobCancelled()
+
+
+def _finish_cancelled(job_id: str, project_id: str, revision_id: str | None) -> None:
+    update_job(job_id, status="cancelled", current_step="Cancelled", error_json=None)
+    with db() as conn:
+        if revision_id:
+            conn.execute(
+                "UPDATE revisions SET status='draft',updated_at=? WHERE id=? AND status='building'",
+                (now(), revision_id),
+            )
+        project = conn.execute("SELECT source_path,analysis_json FROM projects WHERE id=?", (project_id,)).fetchone()
+        if project:
+            has_variants = conn.execute("SELECT 1 FROM variants WHERE project_id=? LIMIT 1", (project_id,)).fetchone()
+            fallback_status = "review_required" if has_variants else (
+                "analysis_ready" if project["analysis_json"] else "uploaded" if project["source_path"] else "draft"
+            )
+            conn.execute(
+                "UPDATE projects SET status=CASE WHEN status IN ('analyzing','generating') THEN ? ELSE status END,updated_at=? WHERE id=?",
+                (fallback_status, now(), project_id),
+            )
+
+
 def update_job(job_id: str, **values: Any) -> None:
     allowed = {"status", "progress_pct", "current_step", "result_id", "error_json"}
     patch = {key: value for key, value in values.items() if key in allowed}
@@ -30,17 +72,33 @@ def update_job(job_id: str, **values: Any) -> None:
     patch["updated_at"] = now()
     sql = ", ".join(f"{key}=?" for key in patch)
     with db() as conn:
-        conn.execute(f"UPDATE jobs SET {sql} WHERE id=?", (*patch.values(), job_id))
+        if patch.get("status") == "cancelled":
+            conn.execute(
+                f"UPDATE jobs SET {sql} WHERE id=? AND status NOT IN ('succeeded','failed')",
+                (*patch.values(), job_id),
+            )
+        else:
+            conn.execute(
+                f"UPDATE jobs SET {sql} WHERE id=? AND status NOT IN ('cancelled','succeeded','failed','cancelling') AND cancel_requested=0",
+                (*patch.values(), job_id),
+            )
 
 
-def create_job(project_id: str, kind: str, payload: dict[str, Any], revision_id: str | None = None) -> dict[str, Any]:
+def create_job(
+    project_id: str,
+    kind: str,
+    payload: dict[str, Any],
+    revision_id: str | None = None,
+    label: str | None = None,
+) -> dict[str, Any]:
     job_id = uuid.uuid4().hex
     timestamp = now()
+    safe_label = (label or JOB_LABELS.get(kind, kind.replace("_", " ").title())).strip()[:120]
     with db() as conn:
         conn.execute(
-            "INSERT INTO jobs(id,project_id,revision_id,kind,status,progress_pct,current_step,payload_json,created_at,updated_at) "
-            "VALUES(?,?,?,?,?,?,?,?,?,?)",
-            (job_id, project_id, revision_id, kind, "queued", 0, "Queued", json.dumps(payload), timestamp, timestamp),
+            "INSERT INTO jobs(id,project_id,revision_id,kind,status,progress_pct,current_step,payload_json,label,created_at,updated_at) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (job_id, project_id, revision_id, kind, "queued", 0, "Queued", json.dumps(payload), safe_label, timestamp, timestamp),
         )
     _POOL.submit(_run_job, job_id)
     with db() as conn:
@@ -52,6 +110,9 @@ def _run_job(job_id: str) -> None:
         row = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
         if not row:
             return
+        if row["status"] in {"cancelled", "cancelling"} or row["cancel_requested"]:
+            conn.execute("UPDATE jobs SET status='cancelled',current_step='Cancelled',updated_at=? WHERE id=?", (now(), job_id))
+            return
         job = dict(row)
     update_job(job_id, status="running", current_step="Starting", progress_pct=1)
     project_id = job["project_id"]
@@ -59,13 +120,16 @@ def _run_job(job_id: str) -> None:
     payload = json_load(job["payload_json"], {})
 
     def progress(percent: int, step: str) -> None:
+        _check_cancelled(job_id)
         update_job(job_id, progress_pct=max(0, min(99, int(percent))), current_step=step)
 
     try:
+        _check_cancelled(job_id)
         if job["kind"] == "analyze":
             with db() as conn:
                 project = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
             report = analyze_font(project["source_path"])
+            _check_cancelled(job_id)
             with db() as conn:
                 conn.execute(
                     "UPDATE projects SET analysis_json=?,status='analysis_ready',updated_at=? WHERE id=?",
@@ -91,6 +155,7 @@ def _run_job(job_id: str) -> None:
                 PROJECTS_ROOT / project_id / "jobs" / job_id, progress,
                 style_profile=profile,
             )
+            _check_cancelled(job_id)
             result_id = None
             with db() as conn:
                 for output in outputs:
@@ -146,6 +211,7 @@ def _run_job(job_id: str) -> None:
                 PROJECTS_ROOT / project_id / "jobs" / job_id, progress,
                 style_profile=refined_profile, variant_labels=[label],
             )
+            _check_cancelled(job_id)
             if len(outputs) != 1:
                 raise RuntimeError("The local font engine did not build the refined variant.")
             output = outputs[0]
@@ -186,6 +252,7 @@ def _run_job(job_id: str) -> None:
                 PROJECTS_ROOT / project_id / "jobs" / job_id, progress,
             )
             validation = validate_font(result["font_path"], progress)
+            _check_cancelled(job_id)
             revision_status = "ready" if validation["status"] == "passed" else "validation_failed"
             with db() as conn:
                 conn.execute(
@@ -203,6 +270,7 @@ def _run_job(job_id: str) -> None:
             with db() as conn:
                 revision = conn.execute("SELECT * FROM revisions WHERE id=?", (revision_id,)).fetchone()
             report = validate_font(revision["font_path"], progress)
+            _check_cancelled(job_id)
             with db() as conn:
                 conn.execute(
                     "UPDATE revisions SET validation_json=?,status=?,updated_at=? WHERE id=?",
@@ -226,6 +294,11 @@ def _run_job(job_id: str) -> None:
                 revision["font_path"], EXPORTS_ROOT / project_id / export_id,
                 payload["format"], payload.get("name", ""), revision["id"], variant["label"],
             )
+            try:
+                _check_cancelled(job_id)
+            except JobCancelled:
+                shutil.rmtree((EXPORTS_ROOT / project_id / export_id).resolve(), ignore_errors=True)
+                raise
             with db() as conn:
                 conn.execute(
                     "INSERT INTO exports(id,project_id,variant_id,revision_id,format,filename,file_path,created_at) VALUES(?,?,?,?,?,?,?,?)",
@@ -236,8 +309,20 @@ def _run_job(job_id: str) -> None:
         else:
             raise RuntimeError(f"Unknown job type: {job['kind']}")
 
+        _check_cancelled(job_id)
         update_job(job_id, status="succeeded", progress_pct=100, current_step="Complete", result_id=result_id)
+        with db() as conn:
+            final_status = conn.execute("SELECT status FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if not final_status or final_status["status"] != "succeeded":
+            raise JobCancelled()
+    except JobCancelled:
+        _finish_cancelled(job_id, project_id, revision_id)
     except Exception as exc:
+        with db() as conn:
+            current = conn.execute("SELECT status,cancel_requested FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if not current or current["cancel_requested"] or current["status"] in {"cancelling", "cancelled"}:
+            _finish_cancelled(job_id, project_id, revision_id)
+            return
         log.exception("Job %s failed", job_id)
         update_job(
             job_id, status="failed", current_step="Failed",

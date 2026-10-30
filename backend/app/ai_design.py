@@ -124,7 +124,7 @@ def build_initial_style_profile(
 def _default_variant_style(label: str) -> dict[str, Any]:
     return {
         "label": label,
-        "rationale": "VFK parameter baseline for an AI-assisted design refinement.",
+        "rationale": "Parameter baseline for an AI-assisted design refinement.",
         "dotSquareness": 0.66,
         "hookWidthScale": 1.1,
         "hookHeightScale": 1.0,

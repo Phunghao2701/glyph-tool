@@ -76,6 +76,7 @@ def init_db() -> None:
                 revision_id TEXT, kind TEXT NOT NULL, status TEXT NOT NULL,
                 progress_pct INTEGER NOT NULL DEFAULT 0, current_step TEXT NOT NULL DEFAULT '',
                 payload_json TEXT NOT NULL DEFAULT '{}', result_id TEXT, error_json TEXT,
+                label TEXT NOT NULL DEFAULT '', cancel_requested INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL, updated_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS glyph_edits (
@@ -109,19 +110,31 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_edits_revision ON glyph_edits(revision_id);
             """
         )
-        for row in conn.execute("SELECT id FROM jobs WHERE status IN ('queued','running')").fetchall():
+        job_columns = {row["name"] for row in conn.execute("PRAGMA table_info(jobs)")}
+        if "label" not in job_columns:
+            conn.execute("ALTER TABLE jobs ADD COLUMN label TEXT NOT NULL DEFAULT ''")
+        if "cancel_requested" not in job_columns:
+            conn.execute("ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0")
+        for row in conn.execute("SELECT id,status FROM jobs WHERE status IN ('queued','running','cancelling')").fetchall():
+            interrupted_status = "cancelled" if row["status"] == "cancelling" else "failed"
+            error = None if interrupted_status == "cancelled" else json.dumps({
+                "code": "APP_RESTARTED",
+                "message": "The local worker stopped before this job finished.",
+                "retryable": True,
+            })
             conn.execute(
-                "UPDATE jobs SET status='failed',current_step='Interrupted by app restart',error_json=?,updated_at=? WHERE id=?",
-                (json.dumps({"code": "APP_RESTARTED", "message": "The local worker stopped before this job finished.", "retryable": True}), now(), row["id"]),
+                "UPDATE jobs SET status=?,current_step=?,error_json=?,updated_at=? WHERE id=?",
+                (interrupted_status, "Cancelled" if interrupted_status == "cancelled" else "Interrupted by app restart", error, now(), row["id"]),
             )
 
 
 def job_payload(job: sqlite3.Row) -> dict[str, Any]:
     return {
-        "id": job["id"], "kind": job["kind"], "status": job["status"],
+        "id": job["id"], "projectId": job["project_id"], "revisionId": job["revision_id"],
+        "kind": job["kind"], "label": job["label"], "status": job["status"],
         "progressPct": job["progress_pct"], "currentStep": job["current_step"],
-        "error": json_load(job["error_json"]), "resultId": job["result_id"],
-        "updatedAt": job["updated_at"],
+        "payload": json_load(job["payload_json"], {}), "error": json_load(job["error_json"]),
+        "resultId": job["result_id"], "createdAt": job["created_at"], "updatedAt": job["updated_at"],
     }
 
 
@@ -171,7 +184,7 @@ def project_payload(conn: sqlite3.Connection, project_id: str) -> dict[str, Any]
             "revisions": [revision_payload(r) for r in revisions],
         })
     jobs = conn.execute(
-        "SELECT * FROM jobs WHERE project_id=? AND status IN ('queued','running') ORDER BY created_at",
+        "SELECT * FROM jobs WHERE project_id=? AND status IN ('queued','running','cancelling') ORDER BY created_at",
         (project_id,),
     ).fetchall()
     analysis = json_load(p["analysis_json"])

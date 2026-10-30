@@ -1,4 +1,4 @@
-export type JobStatus = "queued" | "running" | "succeeded" | "completed" | "failed" | "cancelled";
+export type JobStatus = "queued" | "running" | "cancelling" | "succeeded" | "completed" | "failed" | "cancelled";
 export type JobKind = "analyze" | "generate_initial" | "build_revision" | "validate" | "export" | string;
 
 export interface ApiErrorBody {
@@ -22,14 +22,31 @@ export class ApiError extends Error {
 
 export interface Job {
   id: string;
+  projectId?: string;
+  revisionId?: string | null;
   kind: JobKind;
+  label?: string;
   status: JobStatus;
   progressPct: number;
   currentStep: string;
+  payload?: Record<string, unknown>;
   error?: ApiErrorBody | null;
   resultId?: string | null;
+  createdAt?: string;
   updatedAt?: string;
 }
+
+export interface Review {
+  id: string;
+  variantId: string;
+  revisionId: string;
+  message: string;
+  glyphEditIds: Array<{ kind: "glyph" | "mark"; id: string }>;
+  decision: string;
+  createdAt?: string;
+}
+
+export interface AppSetting { key: string; value: unknown }
 
 export interface SourceFont {
   filename: string;
@@ -185,6 +202,7 @@ export interface AiProviders {
 export interface AiProviderModel { id: string; displayName: string }
 export interface ExportArtifact {
   id: string;
+  projectId?: string;
   variantId: string;
   revisionId: string;
   format: string;
@@ -232,10 +250,35 @@ export async function getProject(projectId: string): Promise<Project> {
 export async function createProject(name: string): Promise<Project> {
   return request<Project>("/projects", { method: "POST", body: JSON.stringify({ name }) });
 }
+export async function updateProject(projectId: string, name: string): Promise<Project> {
+  return request<Project>("/projects/" + encodeURIComponent(projectId), { method: "PUT", body: JSON.stringify({ name }) });
+}
+export async function deleteProject(projectId: string): Promise<void> {
+  return request<void>("/projects/" + encodeURIComponent(projectId), { method: "DELETE" });
+}
 export async function uploadSource(projectId: string, file: File): Promise<SourceFont> {
   const form = new FormData();
   form.append("file", file);
   return request<SourceFont>("/projects/" + encodeURIComponent(projectId) + "/source", { method: "POST", body: form });
+}
+export async function replaceSource(projectId: string, file: File): Promise<SourceFont> {
+  const form = new FormData();
+  form.append("file", file);
+  return request<SourceFont>("/projects/" + encodeURIComponent(projectId) + "/source", { method: "PUT", body: form });
+}
+export async function deleteSource(projectId: string): Promise<void> {
+  return request<void>("/projects/" + encodeURIComponent(projectId) + "/source", { method: "DELETE" });
+}
+export async function getAnalysis(projectId: string): Promise<{ projectId: string; report: AnalysisReport }> {
+  return request<{ projectId: string; report: AnalysisReport }>("/projects/" + encodeURIComponent(projectId) + "/analysis");
+}
+export async function updateAnalysis(projectId: string, report: AnalysisReport): Promise<{ projectId: string; report: AnalysisReport }> {
+  return request<{ projectId: string; report: AnalysisReport }>("/projects/" + encodeURIComponent(projectId) + "/analysis", {
+    method: "PUT", body: JSON.stringify({ report }),
+  });
+}
+export async function deleteAnalysis(projectId: string): Promise<void> {
+  return request<void>("/projects/" + encodeURIComponent(projectId) + "/analysis", { method: "DELETE" });
 }
 export async function startAnalysis(projectId: string): Promise<Job> {
   return request<Job>("/projects/" + encodeURIComponent(projectId) + "/analysis-jobs", { method: "POST", body: JSON.stringify({}) });
@@ -250,12 +293,43 @@ export function getJob(jobId: string): Promise<Job> {
   inFlightJobs.set(jobId, requestPromise);
   return requestPromise;
 }
+export async function listJobs(projectId?: string): Promise<Job[]> {
+  const query = projectId ? "?project_id=" + encodeURIComponent(projectId) : "";
+  return unwrapItems<Job>(await request<unknown>("/jobs" + query));
+}
+export async function createJob(input: {
+  projectId: string; kind: "analyze" | "generate_initial" | "build_revision" | "refine_variant" | "validate" | "export";
+  revisionId?: string; variantId?: string; format?: "ttf" | "otf"; name?: string; message?: string; label?: string;
+}): Promise<Job> {
+  return request<Job>("/jobs", { method: "POST", body: JSON.stringify(input) });
+}
+export async function updateJob(jobId: string, input: { label?: string; action?: "cancel" }): Promise<Job> {
+  return request<Job>("/jobs/" + encodeURIComponent(jobId), { method: "PATCH", body: JSON.stringify(input) });
+}
+export async function retryJob(jobId: string): Promise<Job> {
+  return request<Job>("/jobs/" + encodeURIComponent(jobId) + "/retry", { method: "POST", body: JSON.stringify({}) });
+}
+export async function deleteJob(jobId: string): Promise<{ deleted: boolean; id?: string; job?: Job }> {
+  return request<{ deleted: boolean; id?: string; job?: Job }>("/jobs/" + encodeURIComponent(jobId), { method: "DELETE" });
+}
 export async function startVariants(projectId: string, input: {
   mode: "generate_initial" | "apply_manual_edits";
   baseRevisionId?: string;
   variantId?: string;
 }): Promise<Job> {
   return request<Job>("/projects/" + encodeURIComponent(projectId) + "/variants", { method: "POST", body: JSON.stringify(input) });
+}
+export async function getVariant(variantId: string): Promise<Variant> {
+  return request<Variant>("/variants/" + encodeURIComponent(variantId));
+}
+export async function updateVariant(variantId: string, label: string): Promise<Variant> {
+  return request<Variant>("/variants/" + encodeURIComponent(variantId), { method: "PUT", body: JSON.stringify({ label }) });
+}
+export async function deleteVariant(variantId: string): Promise<void> {
+  return request<void>("/variants/" + encodeURIComponent(variantId), { method: "DELETE" });
+}
+export async function listVariants(projectId: string): Promise<Variant[]> {
+  return unwrapItems<Variant>(await request<unknown>("/projects/" + encodeURIComponent(projectId) + "/variants"));
 }
 export async function createRevision(variantId: string, baseRevisionId: string): Promise<Revision> {
   return request<Revision>("/variants/" + encodeURIComponent(variantId) + "/revisions", {
@@ -264,6 +338,15 @@ export async function createRevision(variantId: string, baseRevisionId: string):
 }
 export async function getRevision(revisionId: string): Promise<Revision> {
   return request<Revision>("/revisions/" + encodeURIComponent(revisionId));
+}
+export async function updateRevision(revisionId: string, approved: boolean): Promise<Revision> {
+  return request<Revision>("/revisions/" + encodeURIComponent(revisionId), { method: "PUT", body: JSON.stringify({ approved }) });
+}
+export async function deleteRevision(revisionId: string): Promise<void> {
+  return request<void>("/revisions/" + encodeURIComponent(revisionId), { method: "DELETE" });
+}
+export async function listRevisions(variantId: string): Promise<Revision[]> {
+  return unwrapItems<Revision>(await request<unknown>("/variants/" + encodeURIComponent(variantId) + "/revisions"));
 }
 export async function getEditorDocument(revisionId: string): Promise<EditorDocument> {
   return request<EditorDocument>("/revisions/" + encodeURIComponent(revisionId) + "/editor-document");
@@ -275,12 +358,41 @@ export async function saveGlyphEdit(revisionId: string, edit: {
   return request<GlyphEdit>("/revisions/" + encodeURIComponent(revisionId) + "/glyph-edits/" +
     encodeURIComponent(edit.kind) + "/" + encodeURIComponent(edit.id), { method: "PUT", body: JSON.stringify(edit) });
 }
+export async function createGlyphEdit(revisionId: string, edit: {
+  kind: "glyph" | "mark"; id: string; w: number; touched: boolean; note: string;
+  contours: Contour[]; strokes: BrushStroke[]; layer?: number[] | null;
+}): Promise<GlyphEdit> {
+  return request<GlyphEdit>("/revisions/" + encodeURIComponent(revisionId) + "/glyph-edits/" + encodeURIComponent(edit.kind) + "/" + encodeURIComponent(edit.id), {
+    method: "POST", body: JSON.stringify(edit),
+  });
+}
+export async function getGlyphEdit(revisionId: string, kind: "glyph" | "mark", id: string): Promise<GlyphEdit> {
+  return request<GlyphEdit>("/revisions/" + encodeURIComponent(revisionId) + "/glyph-edits/" + encodeURIComponent(kind) + "/" + encodeURIComponent(id));
+}
+export async function listGlyphEdits(revisionId: string): Promise<GlyphEdit[]> {
+  return unwrapItems<GlyphEdit>(await request<unknown>("/revisions/" + encodeURIComponent(revisionId) + "/glyph-edits"));
+}
+export async function deleteGlyphEdit(revisionId: string, kind: "glyph" | "mark", id: string): Promise<void> {
+  return request<void>("/revisions/" + encodeURIComponent(revisionId) + "/glyph-edits/" + encodeURIComponent(kind) + "/" + encodeURIComponent(id), { method: "DELETE" });
+}
 export async function createReview(variantId: string, input: {
   revisionId: string; message: string; glyphEditIds: Array<{ kind: "glyph" | "mark"; id: string }>;
 }): Promise<{ id: string }> {
   return request<{ id: string }>("/variants/" + encodeURIComponent(variantId) + "/reviews", {
     method: "POST", body: JSON.stringify(input)
   });
+}
+export async function listReviews(variantId: string): Promise<Review[]> {
+  return unwrapItems<Review>(await request<unknown>("/variants/" + encodeURIComponent(variantId) + "/reviews"));
+}
+export async function getReview(reviewId: string): Promise<Review> {
+  return request<Review>("/reviews/" + encodeURIComponent(reviewId));
+}
+export async function updateReview(reviewId: string, input: { message: string; glyphEditIds: Review["glyphEditIds"] }): Promise<Review> {
+  return request<Review>("/reviews/" + encodeURIComponent(reviewId), { method: "PUT", body: JSON.stringify(input) });
+}
+export async function deleteReview(reviewId: string): Promise<void> {
+  return request<void>("/reviews/" + encodeURIComponent(reviewId), { method: "DELETE" });
 }
 export async function startVariantRefinement(variantId: string, revisionId: string, message: string): Promise<Job> {
   return request<Job>("/variants/" + encodeURIComponent(variantId) + "/refine-jobs", {
@@ -313,6 +425,32 @@ export async function startExport(projectId: string, input: {
 export async function getExport(exportId: string): Promise<ExportArtifact> {
   return request<ExportArtifact>("/exports/" + encodeURIComponent(exportId));
 }
+export async function listExports(projectId?: string): Promise<ExportArtifact[]> {
+  const query = projectId ? "?project_id=" + encodeURIComponent(projectId) : "";
+  return unwrapItems<ExportArtifact>(await request<unknown>("/exports" + query));
+}
+export async function updateExport(exportId: string, filename: string): Promise<ExportArtifact> {
+  return request<ExportArtifact>("/exports/" + encodeURIComponent(exportId), { method: "PUT", body: JSON.stringify({ filename }) });
+}
+export async function deleteExport(exportId: string): Promise<void> {
+  return request<void>("/exports/" + encodeURIComponent(exportId), { method: "DELETE" });
+}
+
+export async function listSettings(): Promise<AppSetting[]> {
+  return unwrapItems<AppSetting>(await request<unknown>("/settings"));
+}
+export async function createSetting(key: string, value: unknown): Promise<AppSetting> {
+  return request<AppSetting>("/settings", { method: "POST", body: JSON.stringify({ key, value }) });
+}
+export async function getSetting(key: string): Promise<AppSetting> {
+  return request<AppSetting>("/settings/" + encodeURIComponent(key));
+}
+export async function updateSetting(key: string, value: unknown): Promise<AppSetting> {
+  return request<AppSetting>("/settings/" + encodeURIComponent(key), { method: "PUT", body: JSON.stringify({ value }) });
+}
+export async function deleteSetting(key: string): Promise<void> {
+  return request<void>("/settings/" + encodeURIComponent(key), { method: "DELETE" });
+}
 
 let inFlightProviders: Promise<AiProviders> | null = null;
 export function getAiProviders(): Promise<AiProviders> {
@@ -321,6 +459,10 @@ export function getAiProviders(): Promise<AiProviders> {
   const tracked = pending.finally(() => { if (inFlightProviders === tracked) inFlightProviders = null; });
   inFlightProviders = tracked;
   return tracked;
+}
+
+export async function getAiProvider(providerId: AiProviderId): Promise<AiProviderStatus> {
+  return request<AiProviderStatus>("/providers/" + encodeURIComponent(providerId));
 }
 
 export async function startChatGptConnect(): Promise<{ authorizationUrl: string }> {

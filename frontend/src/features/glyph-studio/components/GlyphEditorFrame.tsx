@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, saveGlyphEdit, type EditorDocument, type GlyphEdit } from "./api";
+import { useTranslation } from "react-i18next";
+import { ApiError, saveGlyphEdit, type EditorDocument, type GlyphEdit } from "../../../shared/lib/api";
+import { editorFrameResources } from "../../../shared/i18n/resources";
 
 type SaveState = "saved" | "saving" | "error";
 type Props = {
@@ -18,6 +20,7 @@ type FrameMessage = {
   edit?: FrameEdit;
   ok?: boolean;
   error?: string;
+  language?: string;
 };
 
 function safeJson(value: unknown) {
@@ -28,6 +31,7 @@ function requestId() {
 }
 
 export default function GlyphEditorFrame({ revisionId, document, onFlushReady, onSaveState }: Props) {
+  const { t, i18n } = useTranslation();
   const iframe = useRef<HTMLIFrameElement>(null);
   const port = useRef<MessagePort | null>(null);
   const nonce = useRef(requestId());
@@ -50,18 +54,19 @@ export default function GlyphEditorFrame({ revisionId, document, onFlushReady, o
   useEffect(() => {
     let active = true;
     fetch("/font-editor/editor-shell-template.html").then(response => {
-      if (!response.ok) throw new Error("Không tải được editor shell.");
+      if (!response.ok) throw new Error(t("editor.templateError"));
       return response.text();
     }).then(value => { if (active) setTemplate(value); }).catch(error => {
-      if (active) setTemplateError(error instanceof Error ? error.message : "Không tải được editor shell.");
+      if (active) setTemplateError(error instanceof Error ? error.message : t("editor.templateError"));
     });
     return () => { active = false; };
-  }, []);
+  }, [t]);
 
   const rawFv = "fv" in document.document ? document.document.fv : document.document;
   const srcDoc = template ? template
     .replace("__FV_JSON__", safeJson(rawFv))
     .replace("__EDITS_JSON__", safeJson(edits))
+    .replace("__EDITOR_I18N_JSON__", safeJson(editorFrameResources))
     .replace("__FRAME_NONCE__", safeJson(nonce.current).slice(1, -1))
     .replace("__REVISION_ID__", safeJson(revisionId).slice(1, -1)) : "";
 
@@ -113,7 +118,7 @@ export default function GlyphEditorFrame({ revisionId, document, onFlushReady, o
           await task;
           if (dirtyKeys.current.size === 0) onSaveState("saved");
         } catch (error) {
-          const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : "Không lưu được bản vẽ.";
+          const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : t("editor.cannotSave");
           send({ type: "glyph:save-result", requestId: data.requestId, ok: false, error: message });
           onSaveState("error");
         } finally {
@@ -127,20 +132,24 @@ export default function GlyphEditorFrame({ revisionId, document, onFlushReady, o
         if (!waiter) return;
         flushWaiters.current.delete(data.requestId);
         if (data.ok) waiter.resolve();
-        else waiter.reject(new Error(data.error || "Flush thất bại."));
+        else waiter.reject(new Error(data.error || t("editor.flushError")));
       }
     };
     hostPort.start();
-    target.postMessage({ type: "vfk:connect", nonce: nonce.current }, "*", [channel.port2]);
-  }, [onSaveState, send, revisionId]);
+    target.postMessage({ type: "vfk:connect", nonce: nonce.current, language: i18n.resolvedLanguage || i18n.language }, "*", [channel.port2]);
+  }, [i18n.language, i18n.resolvedLanguage, onSaveState, send, revisionId, t]);
+
+  useEffect(() => {
+    send({ type: "editor:locale", language: i18n.resolvedLanguage || i18n.language });
+  }, [i18n.language, i18n.resolvedLanguage, send]);
 
   const flush = useCallback(() => new Promise<void>((resolve, reject) => {
-    if (!port.current) { reject(new Error("Editor chưa kết nối.")); return; }
+    if (!port.current) { reject(new Error(t("editor.notConnected"))); return; }
 
     const id = requestId();
     flushWaiters.current.set(id, { resolve, reject });
     port.current.postMessage({ type: "flush", nonce: nonce.current, requestId: id });
-  }), []);
+  }), [t]);
 
   useEffect(() => { onFlushReady(flush); }, [flush, onFlushReady]);
   useEffect(() => {
@@ -153,9 +162,9 @@ export default function GlyphEditorFrame({ revisionId, document, onFlushReady, o
   useEffect(() => () => { port.current?.close(); port.current = null; }, []);
 
   if (templateError) return <div className="error-box" role="alert">{templateError}</div>;
-  if (!template) return <div className="editor-loading">Đang tải vector board…</div>;
+  if (!template) return <div className="editor-loading">{t("common.loadingEditor")}</div>;
   return <div className="editor-host">
-    <iframe ref={iframe} title="Bàn vẽ vector glyph" sandbox="allow-scripts" srcDoc={srcDoc} onLoad={connect} />
-    <span className="editor-host-note">{pending ? "Đang lưu " + pending + " thay đổi…" : "Autosave · contours xuất font · nét cọ tham chiếu"}</span>
+    <iframe ref={iframe} title={t("editorFrame.drawing")} sandbox="allow-scripts" srcDoc={srcDoc} onLoad={connect} />
+    <span className="editor-host-note">{pending ? t("editor.savingCount", { count: pending }) : t("editor.autosaveNote")}</span>
   </div>;
 }
