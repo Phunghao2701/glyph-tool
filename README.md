@@ -38,6 +38,30 @@ uv run --env-file .env uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 FastAPI tự phục vụ frontend/dist nếu thư mục build tồn tại.
 
+## Chạy bằng Docker
+
+Docker Compose build frontend và backend thành một container. Mặc định ứng dụng chỉ mở trên `127.0.0.1:8000`; callback `127.0.0.1:8765` được map để đăng nhập ChatGPT OAuth hoạt động từ trình duyệt trên máy host.
+
+~~~powershell
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+# Mở .env và thay VFK_KEYRING_PASSWORD bằng một secret ngẫu nhiên dài.
+docker compose up --build -d
+docker compose logs -f vietfont-studio
+~~~
+
+Database, font tải lên, file export và GNOME Keyring được giữ trong named volumes của Docker. Giữ nguyên `VFK_KEYRING_PASSWORD` để mở khóa credential store sau khi restart. `docker compose down` giữ dữ liệu; `docker compose down -v` xóa cả dữ liệu dự án và provider credentials.
+
+Volume dữ liệu Docker tách biệt với thư mục `.data` của lần chạy local; chuyển từ backend local sang Docker không tự nhập các dự án cũ.
+
+## Sao lưu Google Drive
+
+Để bật backup lên Drive, tạo Google Cloud project, bật Google Drive API và Google Picker API, rồi tạo API key cùng OAuth Client ID cho ứng dụng web. Cấu hình OAuth scope `https://www.googleapis.com/auth/drive.file`; Google Picker sẽ yêu cầu người dùng chọn thư mục đích cụ thể. App chỉ giữ access token trong bộ nhớ trang hiện tại và không lưu refresh token.
+
+- Chạy development: điền `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY` và `VITE_GOOGLE_APP_ID` trong `frontend/.env`, sau đó khởi động lại Vite.
+- Chạy Docker: điền cùng ba giá trị trong file `.env` ở thư mục gốc rồi chạy lại `docker compose up --build -d` để đóng gói lại frontend.
+- Thêm authorized JavaScript origins cho `http://127.0.0.1:5173`, `http://localhost:5173` và `http://localhost:8000` theo cách bạn chạy app. Giới hạn API key theo các origin này và `https://docs.google.com/*`; chỉ bật Google Picker API cùng Google Drive API. `VITE_GOOGLE_APP_ID` là project number trong Google Cloud.
+- Sao lưu chỉ gửi các file TTF/OTF export tới thư mục được chọn. App đọc family/style từ metadata font; AI chỉ nhận metadata tên/kiểu và tên file hiện tại để chuẩn hóa tên thư mục, tên file.
+
 ## CI
 
 - `.github/workflows/ci.yml` chạy trên mọi push, pull request và khi chạy thủ công. Workflow build/typecheck frontend, đồng bộ dependency backend từ `uv.lock`, biên dịch module Python và kiểm tra import/OpenAPI.

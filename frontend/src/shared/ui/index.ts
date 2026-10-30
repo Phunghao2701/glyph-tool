@@ -1,4 +1,5 @@
 export { Button } from "./Button";
+export { CrudActions } from "./CrudActions";
 export { EmptyState, ErrorBox, Loading } from "./Feedback";
 export { Icon } from "./Icon";
 export { JobWatch } from "./JobWatch";

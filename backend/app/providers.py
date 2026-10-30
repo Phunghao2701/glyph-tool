@@ -5,6 +5,7 @@ import hashlib
 import html
 import json
 import logging
+import os
 import secrets
 import threading
 import time
@@ -332,7 +333,9 @@ def start_chatgpt_connect(frontend_origin: str | None = None) -> dict[str, str]:
     nonce = _b64url(secrets.token_bytes(32))
     verifier = _b64url(secrets.token_bytes(48))
     challenge = _b64url(hashlib.sha256(verifier.encode("ascii")).digest())
-    server = HTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler)
+    callback_port = int(os.environ.get("VFK_OAUTH_CALLBACK_PORT", "0"))
+    callback_bind_host = "0.0.0.0" if callback_port else "127.0.0.1"
+    server = HTTPServer((callback_bind_host, callback_port), BaseHTTPRequestHandler)
     server.timeout = CALLBACK_TIMEOUT_SECONDS
     port = int(server.server_address[1])
     redirect_uri = f"http://127.0.0.1:{port}{CALLBACK_PATH}"

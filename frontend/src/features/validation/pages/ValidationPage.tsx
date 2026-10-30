@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { approveRevision, getProject, startValidation, type Project } from "../api/validation.api";
+import { approveRevision, deleteRevision, getProject, startValidation, updateRevision, type Project } from "../api/validation.api";
 import { AppLink, useNavigate } from "../../../app/providers/NavigationProvider";
-import { Button, ErrorBox, JobWatch, Loading, StatusTag } from "../../../shared/ui";
+import { Button, CrudActions, ErrorBox, JobWatch, Loading, StatusTag } from "../../../shared/ui";
 import { getError } from "../../../shared/utils/errors";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../shared/ui/primitives/select";
 import { Progress } from "../../../shared/ui/primitives/progress";
@@ -15,6 +15,7 @@ export function ValidationPage({ projectId }: { projectId: string }) {
   const reduceMotion = usePrefersReducedMotion();
   const [project, setProject] = useState<Project | null>(null);
   const [selected, setSelected] = useState(new URLSearchParams(window.location.search).get("variantId") || "");
+  const [selectedRevisionId, setSelectedRevisionId] = useState(new URLSearchParams(window.location.search).get("revisionId") || "");
   const [jobId, setJobId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +28,7 @@ export function ValidationPage({ projectId }: { projectId: string }) {
   if (!project) return error ? <section className="page"><ErrorBox error={error} retry={load} /></section> : <Loading />;
 
   const variant = project.variants.find(item => item.id === selected);
-  const revision = variant?.currentRevision;
+  const revision = variant?.revisions.find(item => item.id === selectedRevisionId) || variant?.currentRevision;
   const checks = revision?.validation?.checks || [];
   const sourceCoverage = project.analysis?.coverage;
   const revisionCoverage = getRevisionCoverage(revision?.validation);
@@ -44,9 +45,15 @@ export function ValidationPage({ projectId }: { projectId: string }) {
   const approve = async () => {
     if (!variant || !revision) return;
     setBusy(true); setError("");
-    try { await approveRevision(variant.id, revision.id); await load(); }
+    try { if (revision.approved) await updateRevision(revision.id, false); else await approveRevision(variant.id, revision.id); await load(); }
     catch (reason) { setError(getError(reason)); }
     finally { setBusy(false); }
+  };
+  const removeRevision = async () => {
+    if (!revision) return;
+    await deleteRevision(revision.id);
+    setSelectedRevisionId("");
+    await load();
   };
 
   return <section className="page validation-page">
@@ -58,7 +65,8 @@ export function ValidationPage({ projectId }: { projectId: string }) {
     <div className="qa-layout">
       <section className="card qa-card">
         <div className="section-heading"><div><div className="eyebrow">{t("validation.checklist")}</div><h2 className="section-title">{t("validation.state")}</h2></div>
-          <label className="form-label">{t("validation.variant")}<Select value={selected || undefined} onValueChange={setSelected}><SelectTrigger className="form-input" aria-label={t("validation.variant")}><SelectValue placeholder={t("validation.variant")} /></SelectTrigger><SelectContent>{project.variants.map(item => <SelectItem key={item.id} value={item.id}>VER {item.label}</SelectItem>)}</SelectContent></Select></label>
+          <label className="form-label">{t("validation.variant")}<Select value={selected || undefined} onValueChange={value => { setSelected(value); setSelectedRevisionId(""); }}><SelectTrigger className="form-input" aria-label={t("validation.variant")}><SelectValue placeholder={t("validation.variant")} /></SelectTrigger><SelectContent>{project.variants.map(item => <SelectItem key={item.id} value={item.id}>VER {item.label}</SelectItem>)}</SelectContent></Select></label>
+          {variant && variant.revisions.length > 1 && <label className="form-label">{t("crud.revisions")}<Select value={revision?.id} onValueChange={setSelectedRevisionId}><SelectTrigger className="form-input" aria-label={t("crud.revisions")}><SelectValue /></SelectTrigger><SelectContent>{variant.revisions.map(item => <SelectItem key={item.id} value={item.id}>{item.id.slice(0, 8)} · {t(`common.status.${item.status}`, { defaultValue: item.status })}</SelectItem>)}</SelectContent></Select></label>}
         </div>
         <div className="qa-rows">
           <AnimatePresence initial={false} mode="popLayout">
@@ -66,10 +74,11 @@ export function ValidationPage({ projectId }: { projectId: string }) {
               <motion.div className="qa-row" key="empty" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.12 }}><div><strong>{t("validation.revisionValidation")}</strong><small>{revision ? t("validation.noValidation", { id: revision.id.slice(0, 8) }) : t("validation.chooseRevision")}</small></div><span className="qa-value wait">{t("validation.notRun")}</span></motion.div>}
           </AnimatePresence>
         </div>
-        <div className="btn-row" style={{ marginTop: 18 }}>
+        <div className="btn-row qa-actions" style={{ marginTop: 18 }}>
           <Button kind="primary" onClick={() => void run()} disabled={busy || !revision}>{busy ? t("validation.makeJob") : t("validation.run")}</Button>
-          <Button kind="secondary" onClick={() => void approve()} disabled={busy || !revision || !passed || !!revision.approved}>{revision?.approved ? t("validation.approved") : t("validation.approve")}</Button>
+          <Button kind="secondary" onClick={() => void approve()} disabled={busy || !revision || (!revision.approved && !passed)}>{revision?.approved ? t("crud.revokeApproval") : t("validation.approve")}</Button>
           {revision && <Button kind="quiet" onClick={() => navigate(`/projects/${projectId}/export?variantId=${variant?.id}&revisionId=${revision.id}`)}>{t("validation.continueExport")}</Button>}
+          {revision && <CrudActions name={`${t("crud.revisions")} ${revision.id.slice(0, 8)}`} onDelete={removeRevision} disabled={busy || project.activeJobs.some(item => item.revisionId === revision.id && ["queued", "running", "cancelling"].includes(item.status))} iconOnly className="qa-actions-menu" />}
         </div>
       </section>
       <aside className="card qa-card">

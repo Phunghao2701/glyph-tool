@@ -81,6 +81,12 @@
   min-width: 0;
 }
 
+.published-font-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 0 0 auto; }
+.published-font-actions .btn { min-height: 36px; padding: 7px 11px; border-radius: 9px; font-size: 11px; }
+.published-font-versions li { align-items: center; }
+.published-font-versions li .crud-actions { flex-basis: 100%; }
+.published-font-actions .crud-text-button:hover:not(:disabled) { border-color: var(--line-strong); }
+
 .published-font-card h2 {
   overflow: hidden;
   margin: 0 0 5px;
@@ -145,8 +151,15 @@
   letter-spacing: .04em;
 }
 
-.published-font-download {
+.published-font-actions .published-font-download {
   flex: 0 0 auto;
+  box-shadow: none;
+}
+
+.published-font-actions .published-font-download:hover:not(:disabled) {
+  border-color: var(--forest);
+  box-shadow: none;
+  transform: none;
 }
 
 .published-font-download a {
@@ -203,5 +216,6 @@
   .published-font-card h2 { white-space: normal; overflow-wrap: anywhere; }
   .published-font-meta { flex-direction: column; gap: 3px; }
   .published-font-format { margin-left: 53px; }
-  .published-font-download { margin-left: auto; }
+  .published-font-actions { width: 100%; flex-wrap: wrap; }
+  .published-font-download { margin-left: 0; }
 }

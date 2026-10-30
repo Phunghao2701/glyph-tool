@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { listProjects, type AiProviderId, type AiProviders, type Project } from "../api/dashboard.api";
+import { deleteProject, listProjects, updateProject, type AiProviderId, type AiProviders, type Project } from "../api/dashboard.api";
 import { DashboardHero } from "../components/DashboardHero";
 import { DashboardMetrics } from "../components/DashboardMetrics";
 import { DashboardProjects } from "../components/DashboardProjects";
@@ -21,6 +21,14 @@ export function DashboardPage({ navigate, view, renderProviderSection }: Dashboa
     listProjects().then(setProjects).catch(e => setError(errorText(e))).finally(() => setLoading(false));
   }, []);
   useEffect(() => { reload(); }, [reload]);
+  const renameProject = useCallback(async (projectId: string, name: string) => {
+    const updated = await updateProject(projectId, name);
+    setProjects(current => current.map(project => project.id === projectId ? { ...project, ...updated } : project));
+  }, []);
+  const removeProject = useCallback(async (projectId: string) => {
+    await deleteProject(projectId);
+    setProjects(current => current.filter(project => project.id !== projectId));
+  }, []);
 
   const selectedProvider = providerSnapshot?.providers.find(provider => provider.id === providerSnapshot.selectedProviderId);
   const connectedProvider = providerSnapshot?.providers.find(provider => provider.status === "connected");
@@ -51,7 +59,7 @@ export function DashboardPage({ navigate, view, renderProviderSection }: Dashboa
         <WorkflowRoadmap hasAnalysis={analyzedProjects.length > 0} hasVariants={hasVariants} hasReviewedVariant={hasReviewedVariant} hasPassedValidation={hasPassedValidation} aiReady={!!aiReady} />
       </section>
     </div>}
-    {!isSettings && <DashboardProjects projects={projects} loading={loading} onCreateProject={() => navigate("/projects/new")} onOpenProject={openProject} onViewAll={openProjectList} mode={isProjects ? "all" : "recent"} />}
+    {!isSettings && <DashboardProjects projects={projects} loading={loading} onCreateProject={() => navigate("/projects/new")} onOpenProject={openProject} onViewAll={openProjectList} onRenameProject={renameProject} onDeleteProject={removeProject} mode={isProjects ? "all" : "recent"} />}
     <div className="provider-feature-slot" style={{ display: isSettings ? "block" : "none" }}>{renderProviderSection(setProviderSnapshot)}</div>
     <span className="sr-only" role="status">{aiLabel}</span>
   </div>;

@@ -1,3 +1,3 @@
-export { createReview, getProject, startVariantRefinement } from "../../../shared/lib/api";
-export type { Project } from "../../../shared/lib/api";
+export { createReview, deleteReview, getProject, listReviews, startVariantRefinement, updateReview } from "../../../shared/lib/api";
+export type { Project, Review } from "../../../shared/lib/api";
 

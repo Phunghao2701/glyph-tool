@@ -217,6 +217,26 @@ export interface ExportArtifact {
   createdAt?: string;
 }
 
+export interface ExportsBackupResult {
+  folderName: string;
+  fontFoldersCreated: number;
+  filesUploaded: number;
+  filesUpdated: number;
+  filesSkipped: number;
+  filesRenamed: number;
+  duplicateMatches: number;
+  collapsedVersions: number;
+  aiAssisted: boolean;
+}
+
+export interface DownloadedBackup {
+  blob: Blob;
+  filename: string;
+  fileCount: number;
+  collapsedVersions: number;
+  aiAssisted: boolean;
+}
+
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
 
 export function getSourceFontUrl(projectId: string): string {
@@ -439,6 +459,36 @@ export async function getExport(exportId: string): Promise<ExportArtifact> {
 export async function listExports(projectId?: string): Promise<ExportArtifact[]> {
   const query = projectId ? "?project_id=" + encodeURIComponent(projectId) : "";
   return unwrapItems<ExportArtifact>(await request<unknown>("/exports" + query));
+}
+export async function downloadExportsBackup(): Promise<DownloadedBackup> {
+  const response = await fetch(API_ROOT + "/backups/download", { method: "POST", credentials: "same-origin" });
+  if (!response.ok) {
+    const raw = await response.text();
+    let payload: unknown;
+    try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw; }
+    const value = payload && typeof payload === "object" ? payload as { detail?: unknown; error?: unknown; message?: string } : {};
+    const detail = value.detail ?? value.error;
+    const body = detail && typeof detail === "object" ? detail as ApiErrorBody :
+      typeof detail === "string" ? { message: detail } :
+      value.message ? { message: value.message } : undefined;
+    throw new ApiError(body?.message || response.statusText || "Could not create the backup.", response.status, body);
+  }
+  const disposition = response.headers.get("content-disposition") || "";
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || "VietFontStudio-Backup.zip";
+  return {
+    blob: await response.blob(),
+    filename,
+    fileCount: Number(response.headers.get("x-backup-file-count") || 0),
+    collapsedVersions: Number(response.headers.get("x-backup-collapsed-versions") || 0),
+    aiAssisted: response.headers.get("x-backup-ai-assisted") === "true",
+  };
+}
+export async function uploadExportsBackupToDrive(folderId: string, accessToken: string): Promise<ExportsBackupResult> {
+  return request<ExportsBackupResult>("/backups/google-drive", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + accessToken },
+    body: JSON.stringify({ folderId }),
+  });
 }
 export async function updateExport(exportId: string, filename: string): Promise<ExportArtifact> {
   return request<ExportArtifact>("/exports/" + encodeURIComponent(exportId), { method: "PUT", body: JSON.stringify({ filename }) });

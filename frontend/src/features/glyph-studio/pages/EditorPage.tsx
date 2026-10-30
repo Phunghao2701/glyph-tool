@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createRevision, createReview, getEditorDocument, getProject, getRevision, startVariants, type Project, type Revision } from "../api/glyph-studio.api";
+import { createRevision, createReview, deleteGlyphEdit, getEditorDocument, getProject, getRevision, startVariants, type Project, type Revision } from "../api/glyph-studio.api";
 import { AppLink, useNavigate } from "../../../app/providers/NavigationProvider";
 import { useRegisterEditorFlush } from "../../../app/providers/EditorFlushProvider";
-import { Button, ErrorBox, Icon, Loading, StatusTag } from "../../../shared/ui";
+import { Button, CrudActions, ErrorBox, Icon, Loading, StatusTag } from "../../../shared/ui";
 import { getError } from "../../../shared/utils/errors";
 import GlyphEditorFrame from "../components/GlyphEditorFrame";
 import { Textarea } from "../../../shared/ui/primitives/textarea";
@@ -66,6 +66,12 @@ export function EditorPage({ projectId, variantId, query }: { projectId: string;
     } catch (e) { setError(getError(e)); }
     finally { setBusy(false); }
   };
+  const removeGlyphEdit = async (kind: "glyph" | "mark", id: string) => {
+    if (!revision) return;
+    await flushRef.current?.();
+    await deleteGlyphEdit(revision.id, kind, id);
+    setDoc(await getEditorDocument(revision.id));
+  };
   if (error && !project) return <section className="page"><ErrorBox error={error} retry={() => void load()} /></section>;
   if (!project || !revision || !doc) return error ? <section className="page"><ErrorBox error={error} retry={() => void load()} /></section> : <Loading label={t("common.openingEditor")} />;
   const variant = project.variants.find(item => item.id === variantId);
@@ -81,6 +87,13 @@ export function EditorPage({ projectId, variantId, query }: { projectId: string;
     </div>
     {error && <ErrorBox error={error} />}
     <div className="studio-shell studio-shell-full"><section className="card studio-center"><GlyphEditorFrame revisionId={revision.id} document={doc} onFlushReady={fn => { flushRef.current = fn; }} onSaveState={setSaveState} /></section></div>
+    <details className="card glyph-edit-history">
+      <summary>{t("crud.glyphEdits")} · {doc.edits.length}</summary>
+      {doc.edits.length ? <div className="crud-section">{doc.edits.map(edit => { const id = edit.targetId || edit.id || ""; return <div className="crud-row" key={`${edit.kind}:${id}`}>
+        <div className="crud-row-main"><strong>{edit.kind === "mark" ? t("crud.mark") : t("crud.glyph")} · {id}</strong><small>{edit.note || `${edit.contours.length} ${t("crud.contours")}`} · v${edit.version}</small></div>
+        <CrudActions name={`${t("crud.glyphEdits")} ${id}`} onDelete={() => removeGlyphEdit(edit.kind, id)} disabled={saveState === "saving"} />
+      </div>; })}</div> : <p className="fine-print">{t("crud.emptyHistory")}</p>}
+    </details>
     <div className="card qa-card form-stack editor-submit">
       <div className="eyebrow">{t("editor.revisionBuild")}</div>
       <label className="form-label">{t("editor.feedback")}<Textarea className="form-input" value={feedback} onChange={e => setFeedback(e.target.value)} rows={3} placeholder={t("editor.feedbackPlaceholder")} /></label>

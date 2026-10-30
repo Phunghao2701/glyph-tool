@@ -48,7 +48,7 @@ export function VariantGenerationPanel({
       </Button>}
     </div>
     <AnimatePresence initial={false} mode="wait">
-      {project.variants.length ? <motion.div key="variants" className="variant-grid" initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -4 }} transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}>{project.variants.map((variant, index) => <VariantCard key={variant.id} variant={variant} projectId={project.id} index={index} />)}</motion.div> :
+        {project.variants.length ? <motion.div key="variants" className="variant-grid" initial={reduceMotion ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -4 }} transition={{ duration: reduceMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}>{project.variants.map((variant, index) => <VariantCard key={variant.id} variant={variant} projectId={project.id} index={index} />)}</motion.div> :
       <motion.div key="empty" className="card empty" initial={reduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -3 }} transition={{ duration: reduceMotion ? 0 : 0.14, ease: [0.22, 1, 0.36, 1] }}><div className="empty-icon">✳</div><h3>{t("variants.emptyTitle")}</h3><p>{unsupported ? t("variants.unsupported") : t("variants.connectPrompt")}</p>
         {project.analysis && !aiReady && <AppLink className="btn btn-light" to={APP_PATHS.aiProviders}>{t("variants.openSettings")}</AppLink>}
       </motion.div>}

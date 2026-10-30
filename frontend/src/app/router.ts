@@ -10,7 +10,8 @@ export type AppRoute =
   | { kind: "studio"; projectId: string; variantId: string; query: URLSearchParams; pathname: string; search: string; hash: string }
   | { kind: "validation"; projectId: string; pathname: string; search: string; hash: string }
   | { kind: "export"; projectId: string; pathname: string; search: string; hash: string }
-  | { kind: "published-fonts"; pathname: string; search: string; hash: string };
+  | { kind: "published-fonts"; pathname: string; search: string; hash: string }
+  | { kind: "backups"; pathname: string; search: string; hash: string };
 
 export function resolveRoute(path: string): AppRoute {
   const url = new URL(path, window.location.origin);
@@ -20,6 +21,9 @@ export function resolveRoute(path: string): AppRoute {
 
   if (url.pathname === APP_PATHS.publishedFonts) {
     return { kind: "published-fonts", pathname: url.pathname, search: url.search, hash };
+  }
+  if (url.pathname === APP_PATHS.backups) {
+    return { kind: "backups", pathname: url.pathname, search: url.search, hash };
   }
   if (root !== "projects" || parts.length <= 1) {
     const view = hash === "providers" || url.searchParams.get("view") === "settings"

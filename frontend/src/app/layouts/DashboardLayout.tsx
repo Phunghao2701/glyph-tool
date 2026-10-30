@@ -7,6 +7,7 @@ import { Button } from "../../shared/ui/primitives/button";
 
 function getPageLabel(pathname: string, search: string, hash: string) {
   if (pathname === APP_PATHS.publishedFonts) return "navigation.publishedFonts";
+  if (pathname === APP_PATHS.backups) return "backup.title";
   const [root, projectId, section] = pathname.split("/").filter(Boolean);
   const view = new URLSearchParams(search).get("view");
   if (root !== "projects" || !projectId) return "navigation.overview";
@@ -41,6 +42,7 @@ export function DashboardLayout({ children, pathname, routeKey, search = "", has
   const isValidation = section === "validation";
   const isExport = section === "export";
   const isPublishedFonts = pathname === APP_PATHS.publishedFonts;
+  const isBackups = pathname === APP_PATHS.backups;
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export function DashboardLayout({ children, pathname, routeKey, search = "", has
           <AppLink to={APP_PATHS.dashboard} afterNavigate={closeMobileMenu} ariaCurrent={isOverview ? "page" : undefined} ariaLabel={t("navigation.overview")} title={t("navigation.overview")} className={`nav-link${isOverview ? " is-active" : ""}`}><Icon name="layout-dashboard" /><span>{t("navigation.overview")}</span></AppLink>
           <AppLink to={APP_PATHS.projects} afterNavigate={closeMobileMenu} ariaCurrent={isProjects ? "page" : undefined} ariaLabel={t("navigation.projects")} title={t("navigation.projects")} className={`nav-link${isProjects ? " is-active" : ""}`}><Icon name="folder-open" /><span>{t("navigation.projects")}</span></AppLink>
           <AppLink to={APP_PATHS.publishedFonts} afterNavigate={closeMobileMenu} ariaCurrent={isPublishedFonts ? "page" : undefined} ariaLabel={t("navigation.publishedFonts")} title={t("navigation.publishedFonts")} className={`nav-link${isPublishedFonts ? " is-active" : ""}`}><Icon name="archive" /><span>{t("navigation.publishedFonts")}</span></AppLink>
+          <AppLink to={APP_PATHS.backups} afterNavigate={closeMobileMenu} ariaCurrent={isBackups ? "page" : undefined} ariaLabel={t("backup.nav")} title={t("backup.nav")} className={`nav-link${isBackups ? " is-active" : ""}`}><Icon name="upload-cloud" /><span>{t("backup.nav")}</span></AppLink>
         </div>
         <div className="nav-group">
           <div className="nav-heading">{t("navigation.workflow")}</div>

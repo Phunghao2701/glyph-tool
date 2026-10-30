@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getProject, type Project } from "../api/projects.api";
+import { getProject, replaceSource, startAnalysis, type Project } from "../api/projects.api";
 import { AppLink } from "../../../app/providers/NavigationProvider";
-import { ErrorBox, Icon, JobWatch, Loading } from "../../../shared/ui";
+import { Button, ErrorBox, Icon, JobWatch, Loading } from "../../../shared/ui";
 import { getError } from "../../../shared/utils/errors";
 import { useAiReadiness } from "../../ai-providers";
 import { AnalysisSummary } from "../../font-analysis";
 import { VariantGenerationPanel } from "../../variants";
-import { Button } from "../../../shared/ui/Button";
 import { useSourceFontPreview } from "../../../shared/hooks/useSourceFontPreview";
 import { getRevisionCoverage } from "../../../shared/utils/revisionCoverage";
 
@@ -31,6 +30,7 @@ export function ProjectPage({ projectId, query }: { projectId: string; query: UR
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [jobId, setJobId] = useState(query.get("job") || "");
+  const sourceInput = useRef<HTMLInputElement>(null);
   const ai = useAiReadiness();
   const { previewRef, previewFontFamily } = useSourceFontPreview<HTMLSpanElement>(projectId, project?.sourceFont?.format);
   const hasLoaded = useRef(false);
@@ -43,7 +43,13 @@ export function ProjectPage({ projectId, query }: { projectId: string; query: UR
       .finally(() => setLoading(false));
   }, [projectId]);
   useEffect(() => { reload(); }, [reload]);
-
+  const replaceFont = async (file?: File) => {
+    if (!file) return;
+    setError("");
+    try { await replaceSource(projectId, file); const job = await startAnalysis(projectId); setJobId(job.id); reload(); }
+    catch (reason) { setError(getError(reason)); }
+    finally { if (sourceInput.current) sourceInput.current.value = ""; }
+  };
   if (loading) return <Loading />;
   if (error && !project) return <section className="page"><ErrorBox error={error} retry={reload} /></section>;
   if (!project) return <section className="page"><ErrorBox error={t("project.missing")} /></section>;
@@ -103,8 +109,15 @@ export function ProjectPage({ projectId, query }: { projectId: string; query: UR
         <div className="field-row"><span>{t("project.family")}</span><b>{analysis?.family || t("common.noAnalysis")}</b></div>
         <div className="field-row"><span>{t("project.units")}</span><b>{analysis?.unitsPerEm ?? "—"}</b></div>
         <div className="field-row"><span>{t("project.outline")}</span><b>{analysis?.outlineType || "—"}</b></div>
+        <input ref={sourceInput} className="sr-only" type="file" accept=".ttf,.otf,font/ttf,font/otf" onChange={event => void replaceFont(event.target.files?.[0])} />
+        <div className="project-resource-actions">
+          <Button kind="secondary" type="button" disabled={project.variants.length > 0 || !!project.activeJobs.length} title={project.variants.length ? t("project.sourceLockedByVariants") : undefined} onClick={() => sourceInput.current?.click()}>{t(project.sourceFont ? "crud.sourceReplace" : "crud.sourceUpload")}</Button>
+        </div>
       </article>
-      <AnalysisSummary analysis={analysis} hasSourceFont={!!project.sourceFont} />
+      <div className="analysis-resource">
+        <AnalysisSummary analysis={analysis} hasSourceFont={!!project.sourceFont} />
+        {!analysis && project.sourceFont && <div className="project-resource-actions"><Button kind="primary" type="button" disabled={!!project.activeJobs.length} onClick={() => void startAnalysis(projectId).then(job => { setJobId(job.id); reload(); }).catch(reason => setError(getError(reason)))}>{t("crud.analysisCreate")}</Button></div>}
+      </div>
     </div>
 
     <div className="card action-footer">

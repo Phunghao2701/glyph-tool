@@ -14,6 +14,8 @@ import { ValidationPage } from "../features/validation";
 import { ExportPage } from "../features/font-export";
 import { ProviderSettingsPage } from "../features/ai-providers";
 import { PublishedFontsPage } from "../features/published-fonts";
+import { BackupsPage } from "../features/backups/pages/BackupsPage";
+import { DriveSessionProvider } from "../features/backups/drive-session";
 import { getError } from "../shared/utils/errors";
 
 function currentPath() {
@@ -30,6 +32,7 @@ function routeTransitionKey(route: AppRoute) {
     case "validation": return "validation:" + route.projectId;
     case "export": return "export:" + route.projectId;
     case "published-fonts": return "published-fonts";
+    case "backups": return "backups";
   }
 }
 
@@ -118,12 +121,17 @@ export default function App() {
     case "published-fonts":
       page = <PublishedFontsPage />;
       break;
+    case "backups":
+      page = <BackupsPage />;
+      break;
   }
 
-  return <NavigationProvider navigate={navigate}>
-    <EditorFlushProvider register={registerEditorFlush}>
-      <DashboardLayout routeKey={routeTransitionKey(route)} pathname={route.pathname} search={route.search} hash={route.hash}>{page}</DashboardLayout>
-    </EditorFlushProvider>
-  </NavigationProvider>;
+  return <DriveSessionProvider>
+    <NavigationProvider navigate={navigate}>
+      <EditorFlushProvider register={registerEditorFlush}>
+        <DashboardLayout routeKey={routeTransitionKey(route)} pathname={route.pathname} search={route.search} hash={route.hash}>{page}</DashboardLayout>
+      </EditorFlushProvider>
+    </NavigationProvider>
+  </DriveSessionProvider>;
 }
 

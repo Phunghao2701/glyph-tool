@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import uuid
+from threading import Lock
 from pathlib import Path
 from typing import Any, Literal
 
@@ -12,7 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.background import BackgroundTask
 
+from .backups import BackupError, backup_exports_to_google_drive, create_export_backup_zip
 from .db import (
     DATA_ROOT, EXPORTS_ROOT, MAX_UPLOAD_BYTES, PROJECTS_ROOT, db, init_db,
     job_payload, json_load, now, project_payload, revision_payload,
@@ -37,6 +40,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
     allow_credentials=False, allow_methods=["*"], allow_headers=["*"],
+    expose_headers=["Content-Disposition", "X-Backup-File-Count", "X-Backup-Collapsed-Versions", "X-Backup-AI-Assisted"],
 )
 
 
@@ -48,6 +52,9 @@ def startup() -> None:
 @app.on_event("shutdown")
 def stop_workers() -> None:
     shutdown()
+
+
+drive_backup_lock = Lock()
 
 
 class ProjectCreate(BaseModel):
@@ -137,6 +144,10 @@ class ExportBody(BaseModel):
 
 class ExportUpdate(BaseModel):
     filename: str = Field(min_length=1, max_length=200)
+
+
+class DriveBackupBody(BaseModel):
+    folderId: str = Field(min_length=10, max_length=200)
 
 
 class JobCreate(BaseModel):
@@ -1224,6 +1235,56 @@ def download_export(export_id: str) -> FileResponse:
     return FileResponse(row["file_path"], filename=row["filename"], media_type="application/octet-stream")
 
 
+@app.post("/api/backups/download")
+def download_exports_backup() -> FileResponse:
+    try:
+        archive_path, result = create_export_backup_zip()
+    except BackupError as exc:
+        raise HTTPException(exc.status_code, detail={"code": exc.code, "message": str(exc)}) from exc
+    return FileResponse(
+        archive_path,
+        filename=result["filename"],
+        media_type="application/zip",
+        headers={
+            "X-Backup-File-Count": str(result["fileCount"]),
+            "X-Backup-Collapsed-Versions": str(result["collapsedVersions"]),
+            "X-Backup-AI-Assisted": "true" if result["aiAssisted"] else "false",
+        },
+        background=BackgroundTask(_remove_backup_file, archive_path),
+    )
+
+
+@app.post("/api/backups/google-drive")
+def upload_exports_backup_to_drive(body: DriveBackupBody, request: Request) -> dict[str, Any]:
+    authorization = request.headers.get("authorization", "")
+    scheme, _, access_token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not access_token.strip():
+        raise HTTPException(401, detail={"code": "GOOGLE_DRIVE_AUTH_REQUIRED", "message": "Select the destination folder again to authorize this backup."})
+    try:
+        with drive_backup_lock:
+            return backup_exports_to_google_drive(body.folderId, access_token)
+    except BackupError as exc:
+        raise HTTPException(exc.status_code, detail={"code": exc.code, "message": str(exc)}) from exc
+
+
+def _remove_backup_file(path: Path) -> None:
+    path.unlink(missing_ok=True)
+
+
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 if FRONTEND_DIST.is_dir():
+    @app.get("/{frontend_path:path}", include_in_schema=False)
+    def frontend_route(frontend_path: str) -> FileResponse:
+        if frontend_path == "api" or frontend_path.startswith("api/"):
+            raise HTTPException(404, "API route not found.")
+        target = (FRONTEND_DIST / frontend_path).resolve()
+        if FRONTEND_DIST.resolve() not in target.parents and target != FRONTEND_DIST.resolve():
+            raise HTTPException(404, "File not found.")
+        if target.is_file():
+            return FileResponse(target)
+        index = FRONTEND_DIST / "index.html"
+        if index.is_file():
+            return FileResponse(index, media_type="text/html")
+        raise HTTPException(404, "Frontend build not found.")
+
     app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")

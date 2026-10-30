@@ -5,7 +5,7 @@ import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReduced
 import { useSourceFontPreview } from "../../../shared/hooks/useSourceFontPreview";
 import type { Project } from "../../../shared/lib/api";
 import { getRevisionCoverage } from "../../../shared/utils/revisionCoverage";
-import { Button, Icon, Input, Progress, StatusTag } from "../../../shared/ui";
+import { Button, CrudActions, Icon, Input, Progress, StatusTag } from "../../../shared/ui";
 import { Button as ShadcnButton } from "../../../shared/ui/primitives/button";
 
 type DashboardProjectsProps = {
@@ -15,6 +15,8 @@ type DashboardProjectsProps = {
   onOpenProject: (projectId: string) => void;
   mode?: "recent" | "all";
   onViewAll?: () => void;
+  onRenameProject: (projectId: string, name: string) => Promise<void>;
+  onDeleteProject: (projectId: string) => Promise<void>;
 };
 
 type Filter = "all" | "pending" | "reviewed";
@@ -29,7 +31,7 @@ function revisionTimestamp(value?: string) {
   const parsed = Date.parse(value || "");
   return Number.isFinite(parsed) ? parsed : 0;
 }
-function ProjectCard({ project, index, onOpen }: { project: Project; index: number; onOpen: () => void }) {
+function ProjectCard({ project, index, onOpen, onRename, onDelete }: { project: Project; index: number; onOpen: () => void; onRename: (name: string) => Promise<void>; onDelete: () => Promise<void> }) {
   const { t } = useTranslation();
   const previewRevision = project.variants
     .filter(variant => variant.currentRevision?.approved && variant.currentRevision.previewUrl)
@@ -59,7 +61,8 @@ function ProjectCard({ project, index, onOpen }: { project: Project; index: numb
       : { label: t("dashboard.statuses.create"), tone: "gray" };
   const tone = ["olive", "", "sand"][index % 3];
   return (
-    <ShadcnButton type="button" variant="ghost" className="card project-card h-auto flex-col items-stretch justify-start" onClick={onOpen} aria-label={t("dashboard.openProject", { name: project.name })}>
+    <article className="card project-card">
+      <ShadcnButton type="button" variant="ghost" className="project-card-open h-auto flex-col items-stretch justify-start" onClick={onOpen} aria-label={t("dashboard.openProject", { name: project.name })}>
       <div ref={previewRef} className={`project-card-sample ${tone}`} style={{ fontFamily: previewFontFamily }}><span>Ag Ắ</span><span className="sample-ghost" aria-hidden="true">Aa</span></div>
       <div className="project-card-body">
         <div className="project-card-title-row"><h3 className="project-card-title">{project.name}</h3><Icon name="arrow-up-right" size={15} /></div>
@@ -76,11 +79,13 @@ function ProjectCard({ project, index, onOpen }: { project: Project; index: numb
         </div>
         {status.tone !== "green" && <div className="project-card-bottom"><StatusTag tone={status.tone === "gold" ? "warn" : "neutral"}>{status.label}</StatusTag></div>}
       </div>
-    </ShadcnButton>
+      </ShadcnButton>
+      <CrudActions className="project-card-actions" name={project.name} onRename={onRename} onDelete={onDelete} disabled={project.activeJobs.length > 0} iconOnly />
+    </article>
   );
 }
 
-export function DashboardProjects({ projects, loading, onCreateProject, onOpenProject, onViewAll, mode = "recent" }: DashboardProjectsProps) {
+export function DashboardProjects({ projects, loading, onCreateProject, onOpenProject, onViewAll, onRenameProject, onDeleteProject, mode = "recent" }: DashboardProjectsProps) {
   const { t, i18n } = useTranslation();
   const reduceMotion = usePrefersReducedMotion();
   const [query, setQuery] = useState("");
@@ -101,7 +106,7 @@ export function DashboardProjects({ projects, loading, onCreateProject, onOpenPr
         {isAll ? <Button kind="primary" type="button" onClick={onCreateProject}><Icon name="plus" />{t("dashboard.createShort")}</Button> : <Button kind="quiet" type="button" onClick={onViewAll}>{t("dashboard.manage")} <Icon name="arrow-right" /></Button>}
       </div>
       {isAll && <div className="card project-toolbar"><label className="field-search"><Icon name="search" /><Input id="project-search" type="search" className="form-input" placeholder={t("dashboard.search")} value={query} onChange={event => setQuery(event.target.value)} aria-label={t("dashboard.searchLabel")} /></label><div className="filter-chips">{(["all", "pending", "reviewed"] as const).map(value => <ShadcnButton key={value} type="button" variant={filter === value ? "secondary" : "ghost"} className={`chip ${filter === value ? "is-selected" : ""}`} aria-pressed={filter === value} onClick={() => setFilter(value)}>{t(`dashboard.filters.${value}`)}</ShadcnButton>)}</div></div>}
-      {loading ? <div className="card empty" role="status"><span>{t("common.loadingProjects")}</span></div> : visibleProjects.length ? <div className="project-grid"><AnimatePresence initial={false} mode="popLayout">{visibleProjects.map((project, index) => <motion.div key={project.id} className="project-motion-item" layout={!reduceMotion} initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -4, scale: 0.985 }} transition={{ duration: reduceMotion ? 0 : 0.18, delay: reduceMotion ? 0 : Math.min(index, 4) * 0.025, ease: [0.22, 1, 0.36, 1] }}><ProjectCard project={project} index={index} onOpen={() => onOpenProject(project.id)} /></motion.div>)}</AnimatePresence></div> : <div className="card empty"><div className="empty-icon"><Icon name={isAll ? "search" : "folder-open"} /></div><h3>{isAll && (query || filter !== "all") ? t("dashboard.noSearchResults") : t("dashboard.noProjects")}</h3><p>{isAll && (query || filter !== "all") ? t("dashboard.noSearchDescription") : t("dashboard.noProjectsDescription")}</p><Button kind="primary" type="button" onClick={onCreateProject}><Icon name="plus" />{t("navigation.createProject")}</Button></div>}
+      {loading ? <div className="card empty" role="status"><span>{t("common.loadingProjects")}</span></div> : visibleProjects.length ? <div className="project-grid"><AnimatePresence initial={false} mode="popLayout">{visibleProjects.map((project, index) => <motion.div key={project.id} className="project-motion-item" layout={!reduceMotion} initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -4, scale: 0.985 }} transition={{ duration: reduceMotion ? 0 : 0.18, delay: reduceMotion ? 0 : Math.min(index, 4) * 0.025, ease: [0.22, 1, 0.36, 1] }}><ProjectCard project={project} index={index} onOpen={() => onOpenProject(project.id)} onRename={name => onRenameProject(project.id, name)} onDelete={() => onDeleteProject(project.id)} /></motion.div>)}</AnimatePresence></div> : <div className="card empty"><div className="empty-icon"><Icon name={isAll ? "search" : "folder-open"} /></div><h3>{isAll && (query || filter !== "all") ? t("dashboard.noSearchResults") : t("dashboard.noProjects")}</h3><p>{isAll && (query || filter !== "all") ? t("dashboard.noSearchDescription") : t("dashboard.noProjectsDescription")}</p><Button kind="primary" type="button" onClick={onCreateProject}><Icon name="plus" />{t("navigation.createProject")}</Button></div>}
     </section>
   );
 }

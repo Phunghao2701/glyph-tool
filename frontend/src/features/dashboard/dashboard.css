@@ -122,8 +122,12 @@
 .dashboard-empty h2 { font-size: 27px; }
 .project-loading { min-height: 190px; display: grid; place-items: center; color: #788176; font-size: 12px; }
 .project-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.project-card { width: 100%; min-width: 0; padding: 17px; border-color: #e0e2d9; border-radius: 13px; color: var(--ink); text-align: left; cursor: pointer; }
-.project-card:hover, .project-card:focus-visible { border-color: #a8bdad; box-shadow: 0 12px 28px rgba(40,72,50,.08); }
+.project-card { position: relative; width: 100%; min-width: 0; padding: 17px; border-color: #e0e2d9; border-radius: 13px; color: var(--ink); text-align: left; cursor: default; }
+.project-card-open { display: flex; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+.project-card-open:hover:not(:disabled) { background: transparent; color: inherit; }
+.project-card-open:focus-visible { outline: 3px solid rgba(49,120,93,.3); outline-offset: 4px; border-radius: 9px; }
+.project-card:hover, .project-card:focus-within { border-color: #a8bdad; box-shadow: 0 12px 28px rgba(40,72,50,.08); }
+.project-card-actions { justify-content: flex-end; margin-top: 3px; padding: 9px 24px 12px 0; border-top: 1px solid #ebede5; }
 .project-card-top { min-height: 48px; }
 .project-card .font-glyph { width: 46px; height: 46px; border-radius: 12px; background: #edf1e9; font-size: 20px; }
 .project-card .status-tag { font-size: 9px; }

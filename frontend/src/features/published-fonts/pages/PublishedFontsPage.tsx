@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { listExports, listProjects, type ExportArtifact, type Project } from "../api/published-fonts.api";
-import { Button, ErrorBox, Icon, Loading } from "../../../shared/ui";
+import { deleteExport, listExports, listProjects, updateExport, type ExportArtifact, type Project } from "../api/published-fonts.api";
+import { Button, CrudActions, ErrorBox, Icon, Loading } from "../../../shared/ui";
 import { Input } from "../../../shared/ui/primitives/input";
 import { getError } from "../../../shared/utils/errors";
 import "../published-fonts.css";
@@ -114,15 +114,19 @@ export function PublishedFontsPage() {
                 <ul>{earlier.map(version => <li key={version.id}>
                   <span>{dateLabel(version.createdAt)}</span>
                   <a href={version.downloadUrl} download={version.filename}>{t("publishedFonts.download")}</a>
+                  <CrudActions name={version.filename} onRename={async filename => { await updateExport(version.id, filename); await load(); }} onDelete={async () => { await deleteExport(version.id); await load(); }} />
                 </li>)}</ul>
               </details>}
             </div>
             <span className="published-font-format">{artifact.format.toUpperCase()}</span>
-            <Button asChild kind="secondary" className="published-font-download">
-              <a href={artifact.downloadUrl} download={artifact.filename} aria-label={`${t("publishedFonts.download")} ${artifact.filename}`}>
-                <Icon name="arrow-down" size={16} /><span>{t("publishedFonts.download")}</span>
-              </a>
-            </Button>
+            <div className="published-font-actions">
+              <Button asChild kind="primary" className="published-font-download">
+                <a href={artifact.downloadUrl} download={artifact.filename} aria-label={`${t("publishedFonts.download")} ${artifact.filename}`}>
+                  <Icon name="arrow-down" size={16} /><span>{t("publishedFonts.download")}</span>
+                </a>
+              </Button>
+              <CrudActions name={artifact.filename} onRename={async filename => { await updateExport(artifact.id, filename); await load(); }} onDelete={async () => { await deleteExport(artifact.id); await load(); }} deleteKind="secondary" />
+            </div>
           </article>;
         })}
       </div>}

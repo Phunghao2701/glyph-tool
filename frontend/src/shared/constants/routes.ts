@@ -4,5 +4,6 @@ export const APP_PATHS = {
   newProject: "/projects/new",
   aiProviders: "/projects?view=settings#providers",
   publishedFonts: "/published-fonts",
+  backups: "/backups",
 } as const;
 

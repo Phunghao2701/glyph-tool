@@ -1,0 +1,25 @@
+services:
+  vietfont-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_GOOGLE_API_KEY: ${VITE_GOOGLE_API_KEY:-}
+        VITE_GOOGLE_APP_ID: ${VITE_GOOGLE_APP_ID:-}
+    restart: unless-stopped
+    init: true
+    environment:
+      VFK_DATA_DIR: /data
+      VFK_OAUTH_CALLBACK_PORT: ${VFK_OAUTH_CALLBACK_PORT:-8765}
+      VFK_KEYRING_PASSWORD: ${VFK_KEYRING_PASSWORD:?Set VFK_KEYRING_PASSWORD in the root .env file}
+    ports:
+      - "127.0.0.1:${VFK_HTTP_PORT:-8000}:8000"
+      - "127.0.0.1:${VFK_OAUTH_CALLBACK_PORT:-8765}:${VFK_OAUTH_CALLBACK_PORT:-8765}"
+    volumes:
+      - font_data:/data
+      - keyring_data:/home/vietfont/.local/share/keyrings
+
+volumes:
+  font_data:
+  keyring_data:
