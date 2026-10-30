@@ -6,9 +6,12 @@ import { Button, ErrorBox, JobWatch, Loading, StatusTag } from "../../../shared/
 import { getError } from "../../../shared/utils/errors";
 import { useAiReadiness } from "../../ai-providers";
 import { Textarea } from "../../../shared/ui/primitives/textarea";
+import { AnimatePresence, motion } from "motion/react";
+import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 
 export function VariantReviewPage({ projectId, variantId }: { projectId: string; variantId: string }) {
   const { t } = useTranslation();
+  const reduceMotion = usePrefersReducedMotion();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [message, setMessage] = useState("");
@@ -67,7 +70,7 @@ export function VariantReviewPage({ projectId, variantId }: { projectId: string;
         <p className="eyebrow">{t("review.feedback")}</p><h2>{t("review.feedbackTitle")}</h2>
         <label>Feedback<Textarea value={message} onChange={e => setMessage(e.target.value)} rows={5} placeholder={t("review.feedbackPlaceholder")} /></label>
         <Button kind="primary" onClick={() => void saveFeedback()} disabled={busy || !revision}>{busy ? t("review.saving") : t("review.saveFeedback")}</Button>
-        {saved && <StatusTag tone="good">{t("review.feedbackSaved")}</StatusTag>}
+        <AnimatePresence initial={false} mode="wait">{saved && <motion.div key="saved" initial={reduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -3 }} transition={{ duration: reduceMotion ? 0 : 0.15 }}><StatusTag tone="good">{t("review.feedbackSaved")}</StatusTag></motion.div>}</AnimatePresence>
         {!ai.ready && <p className="provider-gate">{ai.loading ? t("review.checkingProvider") : t("review.refineNeedsProvider")} <AppLink to="/projects#providers">{t("review.openSettings")}</AppLink></p>}
         <Button kind="primary" onClick={() => void runRefinement()} disabled={busy || refining || !ai.ready || !revision || !message.trim()}>{refining ? t("review.refining") : !ai.ready ? t("review.needAi") : t("review.refine")}</Button>
         <Button onClick={() => navigate("/projects/" + projectId + "/variants/" + variant.id + "/editor")}>{t("review.openCanvas")}</Button>

@@ -48,12 +48,11 @@ export function DashboardPage({ navigate, view, renderProviderSection }: Dashboa
     {!isSettings && !isProjects && <div className="dashboard-lower section-block">
       <DashboardTaskQueue projects={projects} onOpenProject={openProject} />
       <section><div className="section-heading"><div><div className="eyebrow">{t("dashboard.state")}</div><h2 className="section-title">{t("dashboard.workflow")}</h2><p className="section-subtitle">{t("dashboard.workflowDescription")}</p></div></div>
-        <WorkflowRoadmap hasProjects={projects.length > 0} hasAnalysis={analyzedProjects.length > 0} hasVariants={hasVariants} hasReviewedVariant={hasReviewedVariant} hasPassedValidation={hasPassedValidation} aiReady={!!aiReady} providerName={selectedProviderName} />
+        <WorkflowRoadmap hasAnalysis={analyzedProjects.length > 0} hasVariants={hasVariants} hasReviewedVariant={hasReviewedVariant} hasPassedValidation={hasPassedValidation} aiReady={!!aiReady} />
       </section>
     </div>}
     {!isSettings && <DashboardProjects projects={projects} loading={loading} onCreateProject={() => navigate("/projects/new")} onOpenProject={openProject} onViewAll={openProjectList} mode={isProjects ? "all" : "recent"} />}
     <div className="provider-feature-slot" style={{ display: isSettings ? "block" : "none" }}>{renderProviderSection(setProviderSnapshot)}</div>
-    <span className="visually-hidden" role="status">{aiLabel}</span>
-    {isSettings && <p className="settings-provider-summary"><span className="env-dot" />{aiLabel}</p>}
+    <span className="sr-only" role="status">{aiLabel}</span>
   </div>;
 }

@@ -1,0 +1,23 @@
+.export-readiness-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.export-readiness-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.export-readiness-connector {
+  width: 1px;
+  height: 14px;
+  margin: 2px 0 2px 12px;
+  background: #dce4d9;
+}
+
+.export-submit-row {
+  display: flex;
+  justify-content: flex-end;
+}

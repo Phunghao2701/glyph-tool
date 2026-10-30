@@ -16,6 +16,7 @@ type FrameMessage = {
   nonce?: string;
   requestId?: string;
   revisionId?: string;
+  height?: number;
   key?: string;
   edit?: FrameEdit;
   ok?: boolean;
@@ -83,6 +84,11 @@ export default function GlyphEditorFrame({ revisionId, document, onFlushReady, o
     hostPort.onmessage = async (event: MessageEvent<FrameMessage>) => {
       const data = event.data;
       if (!data || data.nonce !== nonce.current) return;
+      if (data.type === "editor:resize" && Number.isFinite(data.height)) {
+        const nextHeight = Math.max(640, Math.min(1800, Math.ceil(data.height || 0)));
+        iframe.current?.style.setProperty("height", `${nextHeight}px`);
+        return;
+      }
       if (data.type === "editor:dirty" && data.key) {
         dirtyKeys.current.add(data.key);
         dirtyVersions.current.set(data.key, (dirtyVersions.current.get(data.key) || 0) + 1);

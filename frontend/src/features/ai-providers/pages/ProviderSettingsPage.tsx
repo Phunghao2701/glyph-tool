@@ -9,6 +9,8 @@ import { getError } from "../../../shared/utils/errors";
 import { ProviderModelChooser } from "../components/ProviderModelChooser";
 import { Button } from "../../../shared/ui/Button";
 import { Input } from "../../../shared/ui/primitives/input";
+import { AnimatePresence, motion } from "motion/react";
+import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 
 function providerStatusTone(provider?: AiProviderStatus): "neutral" | "good" | "warn" | "bad" {
   if (provider?.status === "connected") return "good";
@@ -19,6 +21,7 @@ function providerStatusTone(provider?: AiProviderStatus): "neutral" | "good" | "
 
 export function ProviderSettingsPage({ onSnapshot }: { onSnapshot: (snapshot: AiProviders | null) => void }) {
   const { t } = useTranslation();
+  const reduceMotion = usePrefersReducedMotion();
   const providerStatusLabel = (provider?: AiProviderStatus) => !provider ? t("providers.noStatus") : t(`providers.${provider.status === "connected" ? "connected" : provider.status === "needs_reconnect" ? "reconnect" : provider.status === "error" ? "check" : "disconnected"}`);
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof getAiProviders>> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +91,6 @@ export function ProviderSettingsPage({ onSnapshot }: { onSnapshot: (snapshot: Ai
     setError(""); setNotice(""); setAction("ollama_cloud");
     try {
       await connectOllamaCloud(secret);
-      setNotice(t("providers.ollamaConnected"));
       await reload();
     } catch (e) { setError(getError(e)); }
     finally { setAction(""); }
@@ -142,21 +144,19 @@ export function ProviderSettingsPage({ onSnapshot }: { onSnapshot: (snapshot: Ai
       <StatusTag tone={selectedReady ? "good" : "warn"}>{providerSectionStatus}</StatusTag></div>
     <p className="provider-intro">{t("providers.intro")}</p>
     {!selectedReady && firstConnected?.selectedModelId && <p className="provider-notice" role="status">{t("providers.selectedNotice", { provider: firstConnectedName, model: firstConnected.selectedModelId })}</p>}
-    <p className="provider-privacy">{t("providers.privacy")}</p>
-    {error && <ErrorBox error={error} retry={reload} />}{notice && <p className="provider-notice" role="status">{notice}</p>}
+    {error && <ErrorBox error={error} retry={reload} />}<AnimatePresence initial={false} mode="wait">{notice && <motion.p key={notice} className="provider-notice" role="status" initial={reduceMotion ? false : { opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -3 }} transition={{ duration: reduceMotion ? 0 : 0.16 }}>{notice}</motion.p>}</AnimatePresence>
     {loading && !snapshot && <Loading label={t("providers.loading")} />}
-    <div className="vfk-core-note"><span className="core-note-mark">VF</span><div><small>{t("providers.core")}</small><b>{t("providers.engine")}</b><p>{t("providers.coreDescription")}</p></div><StatusTag tone="good">{t("providers.alwaysOn")}</StatusTag></div>
     <div className="provider-grid">
-      <article className="provider-card">
-        <div className="provider-card-head"><span className="provider-mark openai">AI</span><StatusTag tone={providerStatusTone(chatgpt)}>{providerStatusLabel(chatgpt)}</StatusTag></div>
+      <article className="ai-provider-card">
+        <div className="ai-provider-card-head"><span className="provider-mark openai">AI</span><StatusTag tone={providerStatusTone(chatgpt)}>{providerStatusLabel(chatgpt)}</StatusTag></div>
         <p className="provider-kind">{t("providers.openaiKind")}</p><h3>{t("providers.openai")}</h3>
         <p>{chatgpt?.accountLabel ? t("providers.loginAs", { account: chatgpt.accountLabel }) : t("providers.chatgptIntro")}</p>
         {chatgpt?.status === "connected" ? renderProviderControls(chatgpt, "chatgpt") :
           <Button type="button" kind="primary" className="provider-action" disabled={!!action} onClick={() => void connectChatGpt()}>{action === "chatgpt" ? t("providers.openingLogin") : t("providers.signIn")}</Button>}
         {chatgpt?.errorCode && <small className="provider-error-code">{t("providers.statusCode", { code: chatgpt.errorCode })}</small>}
       </article>
-      <article className="provider-card">
-        <div className="provider-card-head"><span className="provider-mark ollama">OL</span><StatusTag tone={providerStatusTone(ollama)}>{providerStatusLabel(ollama)}</StatusTag></div>
+      <article className="ai-provider-card">
+        <div className="ai-provider-card-head"><span className="provider-mark ollama">OL</span><StatusTag tone={providerStatusTone(ollama)}>{providerStatusLabel(ollama)}</StatusTag></div>
         <p className="provider-kind">{t("providers.ollamaKind")}</p><h3>{t("providers.ollama")}</h3>
         <p>{ollama?.status === "connected" ? (ollama.accountLabel || t("providers.savedKey")) : t("providers.ollamaIntro")}</p>
         {ollama?.status === "connected" ? renderProviderControls(ollama, "ollama_cloud") :
@@ -167,6 +167,5 @@ export function ProviderSettingsPage({ onSnapshot }: { onSnapshot: (snapshot: Ai
         {ollama?.errorCode && <small className="provider-error-code">{t("providers.statusCode", { code: ollama.errorCode })}</small>}
       </article>
     </div>
-    <p className="provider-footnote">{t("providers.oauthNote")}</p>
   </section>;
 }

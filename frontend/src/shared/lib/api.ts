@@ -86,6 +86,12 @@ export interface ValidationCheck {
 export interface ValidationResult {
   status: "passed" | "failed" | "running" | string;
   checks?: ValidationCheck[];
+  coverage?: {
+    requiredCount?: number;
+    presentCount?: number;
+    missing?: string[];
+    percent?: number;
+  };
 }
 
 export interface AiDesign {
@@ -208,9 +214,14 @@ export interface ExportArtifact {
   format: string;
   filename: string;
   downloadUrl: string;
+  createdAt?: string;
 }
 
 const API_ROOT = import.meta.env.VITE_API_BASE_URL || "/api";
+
+export function getSourceFontUrl(projectId: string): string {
+  return API_ROOT + "/projects/" + encodeURIComponent(projectId) + "/source";
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);

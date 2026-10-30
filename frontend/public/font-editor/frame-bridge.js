@@ -63,11 +63,24 @@
   var queued = [];
   var pending = new Map();
   var serial = 0;
+  var resizeObserver = null;
+  var resizeFrame = 0;
 
   function post(message) {
     var packet = Object.assign({ nonce: nonce }, message);
     if (port) port.postMessage(packet);
     else queued.push(packet);
+  }
+  function reportFrameHeight() {
+    if (!port) return;
+    if (resizeFrame) window.cancelAnimationFrame(resizeFrame);
+    resizeFrame = window.requestAnimationFrame(function() {
+      resizeFrame = 0;
+      var root = document.documentElement;
+      var body = document.body;
+      var height = Math.max(root.scrollHeight, root.offsetHeight, body.scrollHeight, body.offsetHeight);
+      post({ type: "editor:resize", height: Math.ceil(height) });
+    });
   }
   function keyFor(edit) {
     return (edit.kind === "mark" ? "m-" : "g-") + edit.id;
@@ -120,6 +133,15 @@
     window.__FV_SET_LOCALE(event.data.language);
     queued.forEach(function(packet) { port.postMessage(packet); });
     queued = [];
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(reportFrameHeight);
+      resizeObserver.observe(document.documentElement);
+      resizeObserver.observe(document.body);
+      var editorRoot = document.querySelector(".ed");
+      if (editorRoot) resizeObserver.observe(editorRoot);
+    }
+    window.addEventListener("resize", reportFrameHeight);
+    reportFrameHeight();
   });
   parent.postMessage({ type: "vfk:frame-ready", nonce: nonce }, "*");
 })();

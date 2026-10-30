@@ -50,7 +50,7 @@ Các job chạy lần lượt trong một worker local. Bản export và databas
 - Hỗ trợ font tĩnh regular: TTF TrueType và OTF CFF. Font nghiêng và variable font được báo là chưa hỗ trợ.
 - VER 1B đặt các dấu thanh trên đỉnh dấu mũ/trăng. VER 1C dựng dấu hỏi từ phần trên của dấu ?.
 - Editor dùng contour và thao tác node để sửa nét xuất ra. Nét cọ là guide để ghi chú và xem trước, không được tự động gộp vào outline.
-- Kiểm định dùng kiemword.py; OpenType Sanitizer được báo skipped nếu môi trường chưa cài module ots.
+- Kiểm định dùng kiemword.py và OpenType Sanitizer (`opentype-sanitizer`); chạy `uv sync` để cài đầy đủ dependency backend trước khi dùng QA hoặc export.
 - Kit nguồn được giữ trong backend/vendor/viet-font-kit. README của kit nêu điều khoản sử dụng phi thương mại; hãy giữ thông báo nguồn và tuân theo điều khoản đó.
 
 ## Dữ liệu local

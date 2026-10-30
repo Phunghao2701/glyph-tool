@@ -1,3 +1,5 @@
+import { APP_PATHS } from "../shared/constants/routes";
+
 export type DashboardView = "overview" | "projects" | "settings";
 
 export type AppRoute =
@@ -7,7 +9,8 @@ export type AppRoute =
   | { kind: "variant-review"; projectId: string; variantId: string; pathname: string; search: string; hash: string }
   | { kind: "studio"; projectId: string; variantId: string; query: URLSearchParams; pathname: string; search: string; hash: string }
   | { kind: "validation"; projectId: string; pathname: string; search: string; hash: string }
-  | { kind: "export"; projectId: string; pathname: string; search: string; hash: string };
+  | { kind: "export"; projectId: string; pathname: string; search: string; hash: string }
+  | { kind: "published-fonts"; pathname: string; search: string; hash: string };
 
 export function resolveRoute(path: string): AppRoute {
   const url = new URL(path, window.location.origin);
@@ -15,6 +18,9 @@ export function resolveRoute(path: string): AppRoute {
   const [root, projectId, section, resourceId, sub] = parts;
   const hash = decodeURIComponent(url.hash.slice(1));
 
+  if (url.pathname === APP_PATHS.publishedFonts) {
+    return { kind: "published-fonts", pathname: url.pathname, search: url.search, hash };
+  }
   if (root !== "projects" || parts.length <= 1) {
     const view = hash === "providers" || url.searchParams.get("view") === "settings"
       ? "settings"

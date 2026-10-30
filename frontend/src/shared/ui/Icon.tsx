@@ -1,6 +1,7 @@
 import type { LucideIcon, LucideProps } from "lucide-react";
 import {
   AlertCircle,
+  Archive,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
@@ -53,6 +54,7 @@ const icons = {
   "arrow-down": ArrowDown,
   "file-type": FileType2,
   "file-check": FileCheck2,
+  archive: Archive,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof icons;

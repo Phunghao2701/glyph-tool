@@ -4,7 +4,7 @@ import { DashboardLayout } from "./layouts/DashboardLayout";
 import { StudioLayout } from "./layouts/StudioLayout";
 import { EditorFlushProvider } from "./providers/EditorFlushProvider";
 import { NavigationProvider, type Navigate } from "./providers/NavigationProvider";
-import { resolveRoute } from "./router";
+import { resolveRoute, type AppRoute } from "./router";
 import { DashboardPage } from "../features/dashboard";
 import { NewProjectPage } from "../features/font-import";
 import { ProjectPage } from "../features/projects";
@@ -13,10 +13,24 @@ import { EditorPage } from "../features/glyph-studio";
 import { ValidationPage } from "../features/validation";
 import { ExportPage } from "../features/font-export";
 import { ProviderSettingsPage } from "../features/ai-providers";
+import { PublishedFontsPage } from "../features/published-fonts";
 import { getError } from "../shared/utils/errors";
 
 function currentPath() {
   return window.location.pathname + window.location.search + window.location.hash;
+}
+
+function routeTransitionKey(route: AppRoute) {
+  switch (route.kind) {
+    case "dashboard": return "dashboard:" + route.view;
+    case "new-project": return "new-project";
+    case "project": return "project:" + route.projectId;
+    case "variant-review": return "variant:" + route.projectId + ":" + route.variantId;
+    case "studio": return "studio:" + route.projectId + ":" + route.variantId;
+    case "validation": return "validation:" + route.projectId;
+    case "export": return "export:" + route.projectId;
+    case "published-fonts": return "published-fonts";
+  }
 }
 
 export default function App() {
@@ -40,7 +54,7 @@ export default function App() {
       const next = currentPath();
       pathRef.current = next;
       setPath(next);
-      if (!window.location.hash) window.scrollTo({ top: 0, behavior: "smooth" });
+      if (!window.location.hash) window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     })();
   }, [t]);
 
@@ -101,11 +115,14 @@ export default function App() {
     case "export":
       page = <ExportPage projectId={route.projectId} />;
       break;
+    case "published-fonts":
+      page = <PublishedFontsPage />;
+      break;
   }
 
   return <NavigationProvider navigate={navigate}>
     <EditorFlushProvider register={registerEditorFlush}>
-      <DashboardLayout pathname={route.pathname} search={route.search} hash={route.hash}>{page}</DashboardLayout>
+      <DashboardLayout routeKey={routeTransitionKey(route)} pathname={route.pathname} search={route.search} hash={route.hash}>{page}</DashboardLayout>
     </EditorFlushProvider>
   </NavigationProvider>;
 }

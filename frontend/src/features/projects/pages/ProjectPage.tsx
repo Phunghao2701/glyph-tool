@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getProject, type Project } from "../api/projects.api";
 import { AppLink } from "../../../app/providers/NavigationProvider";
-import { ErrorBox, Icon, JobWatch, Loading, StatusTag } from "../../../shared/ui";
+import { ErrorBox, Icon, JobWatch, Loading } from "../../../shared/ui";
 import { getError } from "../../../shared/utils/errors";
 import { useAiReadiness } from "../../ai-providers";
 import { AnalysisSummary } from "../../font-analysis";
 import { VariantGenerationPanel } from "../../variants";
 import { Button } from "../../../shared/ui/Button";
+import { useSourceFontPreview } from "../../../shared/hooks/useSourceFontPreview";
+import { getRevisionCoverage } from "../../../shared/utils/revisionCoverage";
 
 function getProjectSteps(project: Project, labels: string[]) {
   const hasAnalysis = !!project.analysis;
@@ -30,6 +32,7 @@ export function ProjectPage({ projectId, query }: { projectId: string; query: UR
   const [error, setError] = useState("");
   const [jobId, setJobId] = useState(query.get("job") || "");
   const ai = useAiReadiness();
+  const { previewRef, previewFontFamily } = useSourceFontPreview<HTMLSpanElement>(projectId, project?.sourceFont?.format);
   const hasLoaded = useRef(false);
   const reload = useCallback(() => {
     if (!hasLoaded.current) setLoading(true);
@@ -50,6 +53,12 @@ export function ProjectPage({ projectId, query }: { projectId: string; query: UR
   const presentCount = coverage?.presentCount;
   const requiredCount = coverage?.requiredCount;
   const coveragePercent = typeof coverage?.percent === "number" ? Math.round(coverage.percent) : null;
+  const revisionCoverageEntry = project.variants
+    .map(variant => ({ variant, revision: variant.currentRevision, coverage: getRevisionCoverage(variant.currentRevision?.validation) }))
+    .filter(entry => !!entry.revision && !!entry.coverage)
+    .sort((a, b) => Date.parse(b.revision?.updatedAt || b.revision?.createdAt || "") - Date.parse(a.revision?.updatedAt || a.revision?.createdAt || ""))[0];
+  const revisionCoverage = revisionCoverageEntry?.coverage;
+  const revisionQaStatus = revisionCoverageEntry?.revision?.validation?.status;
   const variantForStudio = project.variants.find(variant => variant.currentRevisionId || variant.currentRevision?.id);
   const steps = getProjectSteps(project, t("project.steps", { returnObjects: true }) as string[]);
   const createdLabel = project.createdAt ? new Date(project.createdAt).toLocaleDateString(i18n.resolvedLanguage === "en" ? "en-US" : "vi-VN") : t("project.created");
@@ -58,18 +67,20 @@ export function ProjectPage({ projectId, query }: { projectId: string; query: UR
     <AppLink to="/projects?view=projects" className="back-link"><Icon name="arrow-left" /> {t("project.back")}</AppLink>
     <div className="detail-head">
       <div className="detail-head-title">
-        <span className="font-thumb olive" aria-hidden="true">Aa</span>
+        <span ref={previewRef} className="font-thumb olive" style={{ fontFamily: previewFontFamily }} aria-hidden="true">Aa</span>
         <div><div className="eyebrow">{t("project.eyebrow")}</div><h1>{project.name}</h1><p>{project.sourceFont?.filename || t("common.noSourceFont")} · {createdLabel}</p></div>
       </div>
       <div className="page-actions">
-        <StatusTag tone={project.status === "failed" ? "bad" : project.analysis ? "good" : "warn"}>{t(`common.status.${project.status}`, { defaultValue: project.status })}</StatusTag>
         {variantForStudio ? <AppLink className="btn btn-primary" to={`/projects/${project.id}/variants/${variantForStudio.id}/editor`}><Icon name="pen-tool" /> {t("project.openStudio")}</AppLink> : <Button type="button" kind="primary" disabled title={t("project.needVariants")}><Icon name="pen-tool" /> {t("project.openStudio")}</Button>}
       </div>
     </div>
 
     <div className="detail-kpis">
-      <div className="card detail-kpi"><small>{t("project.coverage")}</small><strong>{presentCount ?? "—"} <span style={{ font: "400 15px var(--sans)", color: "#94a096" }}>/ {requiredCount ?? "—"}</span></strong></div>
-      <div className="card detail-kpi"><small>{t("project.vietnameseRatio")}</small><strong>{coveragePercent === null ? "—" : `${coveragePercent}%`}</strong></div>
+      <div className="card detail-kpi"><small>{t("project.sourceCoverage")}</small><strong>{presentCount ?? "—"}<span style={{ font: "400 15px var(--sans)", color: "#94a096" }}> / {requiredCount ?? "—"}{coveragePercent === null ? "" : ` · ${coveragePercent}%`}</span></strong></div>
+      <div className="card detail-kpi">
+        <small>{revisionCoverageEntry ? t("project.revisionCoverageForVariant", { label: revisionCoverageEntry.variant.label }) : t("project.revisionCoverage")}</small>
+        {revisionCoverage ? <><strong>{revisionCoverage.presentCount}<span style={{ font: "400 15px var(--sans)", color: "#94a096" }}> / {revisionCoverage.requiredCount} · {revisionCoverage.percent}%</span></strong><span className="tiny-muted">{t("project.revisionQaStatus", { status: revisionQaStatus ? t(`common.status.${revisionQaStatus}`, { defaultValue: revisionQaStatus }) : t("project.notValidated") })}</span></> : <strong style={{ fontSize: 16 }}>{t("project.notValidated")}</strong>}
+      </div>
       <div className="card detail-kpi"><small>{t("project.variantCount")}</small><strong>{project.variants.length || t("project.notCreated")}</strong></div>
     </div>
 

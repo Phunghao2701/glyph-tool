@@ -17,7 +17,8 @@ from .db import (
     DATA_ROOT, EXPORTS_ROOT, MAX_UPLOAD_BYTES, PROJECTS_ROOT, db, init_db,
     job_payload, json_load, now, project_payload, revision_payload,
 )
-from .font_pipeline import analyze_font
+from .export_dedup import find_export_by_identity
+from .font_pipeline import analyze_font, export_filename, normalize_export_filename
 from .jobs import create_job, shutdown
 from .providers import (
     ProviderError,
@@ -1044,6 +1045,36 @@ def start_export(project_id: str, body: ExportBody) -> dict[str, Any]:
             raise HTTPException(409, detail={"code": "EXPORT_BLOCKED", "blockers": blockers})
         if Path(revision["font_path"]).suffix.lower().lstrip(".") != body.format:
             raise HTTPException(422, "Export format must match the built font format.")
+        expected_filename = export_filename(revision["font_path"], body.name)
+        existing = find_export_by_identity(
+            conn,
+            project_id=project_id,
+            variant_id=body.variantId,
+            revision_id=body.revisionId,
+            output_format=body.format,
+            filename=expected_filename,
+        )
+        if existing:
+            previous_job = conn.execute(
+                "SELECT * FROM jobs WHERE kind='export' AND status='succeeded' AND result_id=? ORDER BY updated_at DESC LIMIT 1",
+                (existing["id"],),
+            ).fetchone()
+            if previous_job:
+                return job_payload(previous_job)
+        active_jobs = conn.execute(
+            "SELECT * FROM jobs WHERE project_id=? AND revision_id=? AND kind='export' "
+            "AND status IN ('queued','running') ORDER BY created_at DESC",
+            (project_id, body.revisionId),
+        ).fetchall()
+        for active_job in active_jobs:
+            active_payload = json_load(active_job["payload_json"], {})
+            active_filename = export_filename(revision["font_path"], active_payload.get("name", ""))
+            if (
+                active_payload.get("variantId") == body.variantId
+                and str(active_payload.get("format", "")).lower() == body.format.lower()
+                and normalize_export_filename(active_filename) == normalize_export_filename(expected_filename)
+            ):
+                return job_payload(active_job)
     return create_job(
         project_id, "export",
         {"variantId": body.variantId, "revisionId": body.revisionId, "format": body.format, "name": body.name},
@@ -1143,6 +1174,27 @@ def update_export(export_id: str, body: ExportUpdate) -> dict[str, Any]:
             raise HTTPException(422, "Export filename extension must match the generated format.")
         if not suffix:
             filename = f"{filename}.{row['format']}"
+        duplicate = None
+        if normalize_export_filename(filename) != normalize_export_filename(row["filename"]):
+            duplicate = find_export_by_identity(
+                conn,
+                project_id=row["project_id"],
+                variant_id=row["variant_id"],
+                revision_id=row["revision_id"],
+                output_format=row["format"],
+                filename=filename,
+                require_file=False,
+                exclude_export_id=export_id,
+            )
+        if duplicate:
+            raise HTTPException(
+                409,
+                detail={
+                    "code": "EXPORT_ALREADY_EXISTS",
+                    "message": "An export with the same revision, format, and filename already exists.",
+                    "exportId": duplicate["id"],
+                },
+            )
         conn.execute("UPDATE exports SET filename=? WHERE id=?", (filename, export_id))
         return _export_payload(conn.execute("SELECT * FROM exports WHERE id=?", (export_id,)).fetchone())
 

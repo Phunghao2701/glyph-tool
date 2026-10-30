@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 from typing import Any, Callable
 
@@ -18,6 +19,19 @@ from .db import TOOLS_ROOT
 
 class FontPipelineError(RuntimeError):
     pass
+
+
+def export_filename(source_font: str | Path, name: str) -> str:
+    """Return the same sanitized filename that write_export will create."""
+    source = Path(source_font)
+    actual_format = source.suffix.lower().lstrip(".")
+    safe = "".join(c for c in (name or source.stem) if c.isalnum() or c in " -_").strip() or source.stem
+    return f"{safe}.{actual_format}"
+
+
+def normalize_export_filename(filename: str) -> str:
+    """Normalize names for duplicate checks on case-insensitive local filesystems."""
+    return unicodedata.normalize("NFKC", filename).strip().casefold()
 
 
 Progress = Callable[[int, str], None]
@@ -259,13 +273,20 @@ def validate_font(path: str | Path, progress: Progress | None = None) -> dict[st
         font = TTFont(target, lazy=False, recalcBBoxes=False, recalcTimestamp=False)
         cmap = font.getBestCmap() or {}
         missing = [ch for ch in VN_CHARS if ord(ch) not in cmap]
+        present_count = len(VN_CHARS) - len(missing)
+        coverage = {
+            "requiredCount": len(VN_CHARS),
+            "presentCount": present_count,
+            "missing": missing,
+            "percent": round(100 * present_count / max(1, len(VN_CHARS)), 1),
+        }
         checks.append({
             "id": "font_parse", "status": "passed",
             "detail": f"Parsed {target.suffix[1:].upper()} with {len(font.getGlyphOrder())} glyphs.",
         })
         checks.append({
             "id": "vietnamese_coverage", "status": "passed" if not missing else "failed",
-            "detail": f"{len(VN_CHARS) - len(missing)}/{len(VN_CHARS)} required characters present." + (f" Missing: {''.join(missing)}" if missing else ""),
+            "detail": f"{present_count}/{len(VN_CHARS)} required characters present." + (f" Missing: {''.join(missing)}" if missing else ""),
         })
     except Exception as exc:
         return {"status": "failed", "checks": [{"id": "font_parse", "status": "failed", "detail": str(exc)}]}
@@ -282,7 +303,7 @@ def validate_font(path: str | Path, progress: Progress | None = None) -> dict[st
     ots = _run_ots(target)
     checks.append(ots)
     required = all(c["status"] in {"passed", "skipped"} for c in checks)
-    return {"status": "passed" if required else "failed", "checks": checks}
+    return {"status": "passed" if required else "failed", "checks": checks, "coverage": coverage}
 
 
 def generate_initial_variants(
@@ -551,8 +572,7 @@ def write_export(
     if actual_format != output_format:
         raise FontPipelineError(f"This revision was built as {actual_format.upper()}; export that format.")
     export_dir.mkdir(parents=True, exist_ok=True)
-    safe = "".join(c for c in (name or source.stem) if c.isalnum() or c in " -_").strip() or source.stem
-    target = export_dir / f"{safe}.{actual_format}"
+    target = export_dir / export_filename(source, name)
     shutil.copy2(source, target)
     family = name.strip()
     if family:

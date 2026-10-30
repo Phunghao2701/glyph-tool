@@ -7,9 +7,12 @@ import { Button, ErrorBox, Icon, Loading, StatusTag } from "../../../shared/ui";
 import { getError } from "../../../shared/utils/errors";
 import GlyphEditorFrame from "../components/GlyphEditorFrame";
 import { Textarea } from "../../../shared/ui/primitives/textarea";
+import { AnimatePresence, motion } from "motion/react";
+import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 
 export function EditorPage({ projectId, variantId, query }: { projectId: string; variantId: string; query: URLSearchParams }) {
   const { t } = useTranslation();
+  const reduceMotion = usePrefersReducedMotion();
   const navigate = useNavigate();
   const registerEditorFlush = useRegisterEditorFlush();
   const [project, setProject] = useState<Project | null>(null);
@@ -70,11 +73,11 @@ export function EditorPage({ projectId, variantId, query }: { projectId: string;
     <div className="studio-head">
       <div>
         <AppLink to={`/projects/${projectId}`} className="back-link"><Icon name="arrow-left" /> {project.name} / {t("editor.back")}</AppLink>
-        <div className="eyebrow">{t("editor.eyebrow", { id: revision.id.slice(0, 8) })}</div>
+        <div className="eyebrow">{t("editor.eyebrow")}</div>
         <h1 className="page-title">Glyph Studio <span className="studio-variant-label">· VER {variant?.label || ""}</span></h1>
         <p className="page-description">{t("editor.description")}</p>
       </div>
-      <div className="page-actions"><StatusTag tone={saveState === "error" ? "bad" : saveState === "saving" ? "warn" : "good"}>{saveState === "saving" ? t("editor.saving") : saveState === "error" ? t("editor.saveError") : t("editor.saved")}</StatusTag></div>
+      <div className="page-actions"><AnimatePresence initial={false} mode="wait">{saveState !== "saved" && <motion.div key={saveState} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -3 }} transition={{ duration: reduceMotion ? 0 : 0.13 }}><StatusTag tone={saveState === "error" ? "bad" : "warn"}>{saveState === "saving" ? t("editor.saving") : t("editor.saveError")}</StatusTag></motion.div>}</AnimatePresence></div>
     </div>
     {error && <ErrorBox error={error} />}
     <div className="studio-shell studio-shell-full"><section className="card studio-center"><GlyphEditorFrame revisionId={revision.id} document={doc} onFlushReady={fn => { flushRef.current = fn; }} onSaveState={setSaveState} /></section></div>

@@ -861,6 +861,7 @@ function pzUp(ev){ if (ev.pointerType !== 'touch' || !TP[ev.pointerId]) return; 
 svg.addEventListener('pointerup', pzUp, true); svg.addEventListener('pointercancel', pzUp, true);
 window.__edPinchState = function(){ return { n: TPn, pinch: !!PZ, vb: vb }; };
 svg.addEventListener('pointerdown', function(ev){
+  svg.focus({ preventScroll: true });
   if (ev.button === 1 || tool === 'hand' || ev.altKey && tool !== 'pen') { drag = { pan: true, sx: ev.clientX, sy: ev.clientY, vb: Object.assign({}, vb) }; svg.setPointerCapture(ev.pointerId); return; }
   var e = cur(), p = toLocal(ev), t = hit(ev);
   var bEl = t && t.closest && t.closest('[data-board]');
@@ -971,7 +972,7 @@ document.addEventListener('keydown', function(ev){
   if (!edOn && !root.matches(':hover') && !root.contains(document.activeElement)) return;
   var a = document.activeElement; if (a && (/TEXTAREA|INPUT/.test(a.tagName) || a.isContentEditable)) return;
   var k = ev.key.toLowerCase();
-  if ((ev.ctrlKey || ev.metaKey) && (k === 'z' || k === 'y')) { ev.preventDefault(); if (k === 'y' || ev.shiftKey) redo(); else undo(); return; }
+  if ((ev.ctrlKey || ev.metaKey) && k === 'z') { ev.preventDefault(); if (ev.shiftKey) redo(); else undo(); return; }
   if ((ev.ctrlKey || ev.metaKey) && k === 'c') { ev.preventDefault(); copySel(); return; }
   if ((ev.ctrlKey || ev.metaKey) && k === 'v') { ev.preventDefault(); pasteClip(ev.shiftKey ? 'raw' : 'axis'); return; }
   if ((ev.ctrlKey || ev.metaKey) && (k === '=' || k === '+' || k === '-')) { ev.preventDefault(); zoom(k === '-' ? 1.25 : 0.8); return; }   // phóng to / thu nhỏ: Ctrl + / − (như Illustrator)
@@ -997,7 +998,7 @@ function saveOne(k){
     strokes: e.strokes, layer: s0.kind === "m" ? layerTFor(s0.id) : null, updatedAt: new Date().toISOString() };
   return db.doc(EDDOC + "/" + k).set(body).then(function(){
     if ((e.saveGen || 0) === gen) { e.reset = false; e.pendingSave = false; }
-    say("<b>" + tr('saved') + "</b> " + label(s0));
+    say('');
     return body;
   });
 }
@@ -1037,7 +1038,7 @@ window.__edDb = function(d){
   db.collection(EDDOC).get().then(function(qs){
     qs.docs.forEach(function(doc){ var v = doc.data() || {}; var s = { kind: v.kind === 'mark' ? 'm' : 'g', id: v.id }; if (s.kind === 'm' && !MK[s.id]) return; if (s.kind === 'g' && !FV.recipes[s.id] && !FV.glyphs[s.id]) return;
       var e = getEd(s); if (v.touched && v.contours) e.contours = opsToNodes(v.contours); e.strokes = v.strokes || []; e.touched = !!v.touched; e.note = v.note || ''; });
-    say('<b>' + tr('autosaved') + '</b>');
+    say('');
     render(); if (window.__save) window.__save();
   }).catch(function(){ say(tr('readFailed')); });
 };

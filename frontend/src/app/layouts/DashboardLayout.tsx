@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AppLink } from "../providers/NavigationProvider";
-import { Icon, LanguageSwitcher } from "../../shared/ui";
+import { Icon, LanguageSwitcher, RouteTransition } from "../../shared/ui";
 import { APP_PATHS } from "../../shared/constants/routes";
 import { Button } from "../../shared/ui/primitives/button";
 
 function getPageLabel(pathname: string, search: string, hash: string) {
+  if (pathname === APP_PATHS.publishedFonts) return "navigation.publishedFonts";
   const [root, projectId, section] = pathname.split("/").filter(Boolean);
   const view = new URLSearchParams(search).get("view");
   if (root !== "projects" || !projectId) return "navigation.overview";
@@ -18,9 +19,10 @@ function getPageLabel(pathname: string, search: string, hash: string) {
   return "project.details";
 }
 
-export function DashboardLayout({ children, pathname, search = "", hash = "" }: {
+export function DashboardLayout({ children, pathname, routeKey, search = "", hash = "" }: {
   children: ReactNode;
   pathname: string;
+  routeKey: string;
   search?: string;
   hash?: string;
 }) {
@@ -38,6 +40,7 @@ export function DashboardLayout({ children, pathname, search = "", hash = "" }: 
   const isStudio = section === "variants";
   const isValidation = section === "validation";
   const isExport = section === "export";
+  const isPublishedFonts = pathname === APP_PATHS.publishedFonts;
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   useEffect(() => {
@@ -52,14 +55,14 @@ export function DashboardLayout({ children, pathname, search = "", hash = "" }: 
     <aside id="primary-sidebar" className="sidebar" aria-label={t("navigation.primary")}>
       <AppLink to={APP_PATHS.dashboard} className="brand" afterNavigate={closeMobileMenu} ariaLabel="VietFont Studio" title="VietFont Studio">
         <img className="brand-mark" src="/images/brand/vietfont-studio-mark.svg" alt="" />
-        <span className="brand-copy"><strong>VietFont <span>Studio</span></strong><small>{t("navigation.brandTagline")}</small></span>
+        <span className="brand-copy"><strong>VietFont <span>Studio</span></strong></span>
       </AppLink>
-      <div className="workspace-picker"><span className="workspace-avatar">VF</span><span className="workspace-text"><strong>{t("navigation.workspaceName")}</strong><small>{t("navigation.personal")}</small></span><span className="picker-caret" aria-hidden="true">⌄</span></div>
-      <nav aria-label={t("navigation.workspace")}>
+      <nav aria-label={t("navigation.primary")}>
         <div className="nav-group">
-          <div className="nav-heading">{t("navigation.space")}</div>
+          <div className="nav-heading">{t("navigation.general")}</div>
           <AppLink to={APP_PATHS.dashboard} afterNavigate={closeMobileMenu} ariaCurrent={isOverview ? "page" : undefined} ariaLabel={t("navigation.overview")} title={t("navigation.overview")} className={`nav-link${isOverview ? " is-active" : ""}`}><Icon name="layout-dashboard" /><span>{t("navigation.overview")}</span></AppLink>
           <AppLink to={APP_PATHS.projects} afterNavigate={closeMobileMenu} ariaCurrent={isProjects ? "page" : undefined} ariaLabel={t("navigation.projects")} title={t("navigation.projects")} className={`nav-link${isProjects ? " is-active" : ""}`}><Icon name="folder-open" /><span>{t("navigation.projects")}</span></AppLink>
+          <AppLink to={APP_PATHS.publishedFonts} afterNavigate={closeMobileMenu} ariaCurrent={isPublishedFonts ? "page" : undefined} ariaLabel={t("navigation.publishedFonts")} title={t("navigation.publishedFonts")} className={`nav-link${isPublishedFonts ? " is-active" : ""}`}><Icon name="archive" /><span>{t("navigation.publishedFonts")}</span></AppLink>
         </div>
         <div className="nav-group">
           <div className="nav-heading">{t("navigation.workflow")}</div>
@@ -73,8 +76,6 @@ export function DashboardLayout({ children, pathname, search = "", hash = "" }: 
         </div>
       </nav>
       <div className="sidebar-spacer" />
-      <AppLink to={APP_PATHS.newProject} afterNavigate={closeMobileMenu} ariaLabel={t("navigation.createProject")} title={t("navigation.createProject")} className="btn btn-primary sidebar-create"><Icon name="plus" /><span>{t("navigation.createProject")}</span></AppLink>
-      <div className="sidebar-local"><span className="local-pulse" /><div><strong>{t("navigation.localEngine")}</strong><small>{t("navigation.localFiles")}</small></div></div>
       <small className="sidebar-version">VIETFONT STUDIO</small>
     </aside>
     <Button variant="ghost" className="mobile-shade p-0" type="button" aria-label={t("navigation.closeMenu")} onClick={closeMobileMenu} />
@@ -82,11 +83,11 @@ export function DashboardLayout({ children, pathname, search = "", hash = "" }: 
       <header className="topbar">
         <div className="topbar-left">
           <Button variant="ghost" className="menu-button icon-button p-0" type="button" aria-label={t("navigation.openMenu")} aria-controls="primary-sidebar" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(open => !open)}><Icon name="menu" /></Button>
-          <div className="breadcrumb"><span>{t("navigation.workspaceCrumb")}</span><Icon name="chevron-right" /><strong>{t(getPageLabel(pathname, search, hash))}</strong></div>
+          <div className="breadcrumb"><span>{t("navigation.studioCrumb")}</span><Icon name="chevron-right" /><strong>{t(getPageLabel(pathname, search, hash))}</strong></div>
         </div>
-        <div className="topbar-right"><LanguageSwitcher /><span className="environment-tag"><i className="env-dot" />{t("navigation.local")}</span><span className="avatar-button" aria-label="Viet Font Studio">VF</span></div>
+        <div className="topbar-right"><LanguageSwitcher /><span className="avatar-button" aria-label="Viet Font Studio">VF</span></div>
       </header>
-      <main id="main-content" className="content">{children}</main>
+      <main id="main-content" className="content"><RouteTransition routeKey={routeKey}>{children}</RouteTransition></main>
     </div>
   </div>;
 }

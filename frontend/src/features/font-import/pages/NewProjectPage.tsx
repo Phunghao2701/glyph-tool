@@ -6,9 +6,12 @@ import { Button, ErrorBox } from "../../../shared/ui";
 import { Icon } from "../../../shared/ui/Icon";
 import { getError } from "../../../shared/utils/errors";
 import { Input } from "../../../shared/ui/primitives/input";
+import { AnimatePresence, motion } from "motion/react";
+import { usePrefersReducedMotion } from "../../../shared/hooks/usePrefersReducedMotion";
 
 export function NewProjectPage() {
   const { t } = useTranslation();
+  const reduceMotion = usePrefersReducedMotion();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -31,10 +34,9 @@ export function NewProjectPage() {
     <form className="card settings-card form-stack" onSubmit={submit}>
       <label className="form-label">{t("import.name")} <Input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder={t("import.namePlaceholder")} /></label>
       <label className="dropzone"><input type="file" accept=".ttf,.otf,font/ttf,font/otf" onChange={e => setFile(e.target.files?.[0] || null)} />
-        <span className="drop-icon"><Icon name="upload-cloud" /></span><strong>{file ? file.name : t("import.drop")}</strong><p>{file ? (file.size / 1024 / 1024).toFixed(2) + " MB" : t("import.fileLimit")}</p>
+        <span className="drop-icon"><Icon name="upload-cloud" /></span><AnimatePresence initial={false} mode="wait"><motion.strong key={file?.name || "prompt"} style={{ display: "inline-block" }} initial={reduceMotion ? false : { opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -3 }} transition={{ duration: reduceMotion ? 0 : 0.14 }}>{file ? file.name : t("import.drop")}</motion.strong></AnimatePresence><p>{file ? (file.size / 1024 / 1024).toFixed(2) + " MB" : t("import.fileLimit")}</p>
       </label>
       {error && <ErrorBox error={error} />}
-      <div className="notice" style={{ marginTop: 18 }}>{t("import.privacy")}</div>
       <div className="modal-bottom"><AppLink to="/projects" className="btn btn-light">{t("common.cancel")}</AppLink><Button type="submit" kind="primary" disabled={busy}>{busy ? t("import.uploading") : t("import.create")}</Button></div>
     </form>
   </section>;

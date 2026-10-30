@@ -6,6 +6,9 @@
 @import "../../features/dashboard/dashboard.css";
 @import "./reference-v2.css";
 
+/* Route pages use the published-fonts page top spacing as their shared baseline. */
+.page { padding-top: 0; }
+
 .avatar-button { display: grid; place-items: center; }
 .language-switcher { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: #f5f4ed; }
 .language-switcher button { border: 0; border-radius: 6px; background: transparent; color: #647368; padding: 5px 8px; font: inherit; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; }
@@ -13,6 +16,12 @@
 .language-switcher button:focus-visible { outline: 2px solid #8fc7a5; outline-offset: 2px; }
 .language-switcher button[data-slot="button"] { border: 0; }
 .progress [data-slot="progress-indicator"] { background: var(--green); }
+button[data-slot="button"], .btn, .dashboard-create,
+button[data-slot="button"]:hover:not(:disabled), .btn:hover:not(:disabled), .dashboard-create:hover:not(:disabled) { box-shadow: none; }
+button[data-slot="button"]:focus-visible, .btn:focus-visible, .dashboard-create:focus-visible { box-shadow: none; }
+.btn-light:hover:not(:disabled) { border-color: var(--line-strong); }
+.dashboard-view .project-card[data-slot="button"]:hover:not(:disabled) { border-color: #e0e2d9; }
+.provider-disconnect:hover:not(:disabled) { border-color: #f5d8ce; }
 .studio-route .studio-shell-full { grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .studio-shell-full .studio-center { min-height: 0; padding: 0; }
 .studio-shell-full .editor-host { margin: 0; border: 0; border-radius: 13px; box-shadow: none; }
@@ -32,7 +41,6 @@
   border-radius: 11px;
   background: transparent;
 }
-
 @media (max-width: 900px) {
   .app-shell { display: block; }
   .sidebar {
@@ -59,21 +67,10 @@
     backdrop-filter: blur(2px);
   }
   .brand { justify-content: flex-start; padding: 0 8px 28px; }
-  .brand-copy, .workspace-text, .picker-caret, .nav-heading,
-  .nav-link > span:not(:first-child), .sidebar-local div, .sidebar-version { display: initial; }
-  .workspace-picker { justify-content: flex-start; padding: 11px 9px; }
+  .brand-copy, .nav-heading, .nav-link > span:not(:first-child), .sidebar-version { display: initial; }
   .nav-link { justify-content: flex-start; }
-  .sidebar-local { justify-content: flex-start; }
-  .sidebar-local .local-pulse { margin-top: 4px; }
-  .sidebar-create { display: flex; width: 100%; justify-content: center; }
-  .sidebar-create span { display: inline; }
   .main-column { min-height: 100vh; }
   .menu-button { display: grid !important; }
   .topbar { height: 64px; padding: 0 18px; }
   .content { padding: 24px 16px 55px; }
-}
-
-@media (min-width: 901px) and (max-width: 1050px) {
-  .sidebar-create { width: 52px; height: 44px; justify-content: center; padding: 0; margin-inline: auto; }
-  .sidebar-create span { display: none; }
 }

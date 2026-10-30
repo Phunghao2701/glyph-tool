@@ -5,6 +5,7 @@ export { JobWatch } from "./JobWatch";
 export { LanguageSwitcher } from "./LanguageSwitcher";
 export { MagicCard } from "./magic-card";
 export { NumberTicker } from "./number-ticker";
+export { RouteTransition } from "./RouteTransition";
 export { StatusTag } from "./StatusTag";
 export { Input } from "./primitives/input";
 export { Textarea } from "./primitives/textarea";

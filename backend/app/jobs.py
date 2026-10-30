@@ -11,9 +11,11 @@ import shutil
 
 from .ai_design import build_initial_style_profile, refine_variant_style
 from .db import EXPORTS_ROOT, PROJECTS_ROOT, db, job_payload, json_load, now
+from .export_dedup import find_export_by_identity
 from .font_pipeline import (
     analyze_font,
     apply_editor_edits,
+    export_filename,
     generate_initial_variants,
     validate_font,
     write_export,
@@ -289,23 +291,53 @@ def _run_job(job_id: str) -> None:
                 raise RuntimeError("Export blocked because this exact revision is no longer approved and validated.")
             if Path(revision["font_path"]).suffix.lower().lstrip(".") != payload["format"]:
                 raise RuntimeError("Export format no longer matches the selected revision.")
-            export_id = uuid.uuid4().hex
-            output_path, filename = write_export(
-                revision["font_path"], EXPORTS_ROOT / project_id / export_id,
-                payload["format"], payload.get("name", ""), revision["id"], variant["label"],
-            )
-            try:
-                _check_cancelled(job_id)
-            except JobCancelled:
-                shutil.rmtree((EXPORTS_ROOT / project_id / export_id).resolve(), ignore_errors=True)
-                raise
+            name = payload.get("name", "")
+            expected_filename = export_filename(revision["font_path"], name)
             with db() as conn:
-                conn.execute(
-                    "INSERT INTO exports(id,project_id,variant_id,revision_id,format,filename,file_path,created_at) VALUES(?,?,?,?,?,?,?,?)",
-                    (export_id, project_id, variant["id"], revision["id"], payload["format"], filename, output_path, now()),
+                existing = find_export_by_identity(
+                    conn,
+                    project_id=project_id,
+                    variant_id=variant["id"],
+                    revision_id=revision["id"],
+                    output_format=payload["format"],
+                    filename=expected_filename,
                 )
-                conn.execute("UPDATE projects SET status='exported',updated_at=? WHERE id=?", (now(), project_id))
-            result_id = export_id
+            if existing:
+                progress(99, "Reusing existing export")
+                result_id = existing["id"]
+            else:
+                export_id = uuid.uuid4().hex
+                export_dir = EXPORTS_ROOT / project_id / export_id
+                output_path, filename = write_export(
+                    revision["font_path"], export_dir,
+                    payload["format"], name, revision["id"], variant["label"],
+                )
+                try:
+                    _check_cancelled(job_id)
+                except JobCancelled:
+                    shutil.rmtree(export_dir.resolve(), ignore_errors=True)
+                    raise
+                with db() as conn:
+                    # Recheck immediately before insert so concurrent requests can converge on one artifact.
+                    existing = find_export_by_identity(
+                        conn,
+                        project_id=project_id,
+                        variant_id=variant["id"],
+                        revision_id=revision["id"],
+                        output_format=payload["format"],
+                        filename=filename,
+                    )
+                    if existing:
+                        result_id = existing["id"]
+                    else:
+                        conn.execute(
+                            "INSERT INTO exports(id,project_id,variant_id,revision_id,format,filename,file_path,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                            (export_id, project_id, variant["id"], revision["id"], payload["format"], filename, output_path, now()),
+                        )
+                        conn.execute("UPDATE projects SET status='exported',updated_at=? WHERE id=?", (now(), project_id))
+                        result_id = export_id
+                if result_id != export_id:
+                    shutil.rmtree(export_dir.resolve(), ignore_errors=True)
         else:
             raise RuntimeError(f"Unknown job type: {job['kind']}")
 
