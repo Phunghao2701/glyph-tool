@@ -6,3 +6,6 @@ frontend/dist/
 __pycache__/
 *.py[cod]
 .scratch/
+.env
+.env.*
+!.env.example

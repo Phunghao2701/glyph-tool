@@ -11,7 +11,8 @@ Terminal 1 — backend:
 ~~~powershell
 Set-Location -LiteralPath 'E:\viethoa-font-tool\backend'
 uv sync
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+uv run --env-file .env uvicorn app.main:app --host 127.0.0.1 --port 8000
 ~~~
 
 Terminal 2 — frontend:
@@ -19,6 +20,7 @@ Terminal 2 — frontend:
 ~~~powershell
 Set-Location -LiteralPath 'E:\viethoa-font-tool\frontend'
 npm install
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 npm run dev
 ~~~
 
@@ -30,7 +32,8 @@ Mở địa chỉ Vite hiển thị trong terminal (mặc định http://127.0.0
 Set-Location -LiteralPath 'E:\viethoa-font-tool\frontend'
 npm run build
 Set-Location -LiteralPath 'E:\viethoa-font-tool\backend'
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+uv run --env-file .env uvicorn app.main:app --host 127.0.0.1 --port 8000
 ~~~
 
 FastAPI tự phục vụ frontend/dist nếu thư mục build tồn tại.
@@ -38,6 +41,12 @@ FastAPI tự phục vụ frontend/dist nếu thư mục build tồn tại.
 ## CI
 
 - `.github/workflows/ci.yml` chạy trên mọi push, pull request và khi chạy thủ công. Workflow build/typecheck frontend, đồng bộ dependency backend từ `uv.lock`, biên dịch module Python và kiểm tra import/OpenAPI.
+
+## Cấu hình môi trường
+
+- Backend: sao chép `backend/.env.example` thành `backend/.env`. `VFK_DATA_DIR` chọn thư mục lưu database và font; đường dẫn tương đối được tính từ `backend/`.
+- Frontend: sao chép `frontend/.env.example` thành `frontend/.env`. `VITE_API_BASE_URL` đặt đường dẫn API và `VFK_API_ORIGIN` đặt đích proxy trong Vite khi chạy development.
+- File `.env` và `.env.local` không được Git theo dõi. Chỉ chia sẻ các file `.env.example`, không đưa token hoặc API key vào đó.
 
 ## Luồng MVP
 

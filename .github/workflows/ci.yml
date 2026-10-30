@@ -16,8 +16,6 @@ jobs:
   web:
     name: Build and smoke-check web app
     runs-on: ubuntu-latest
-    env:
-      VFK_DATA_DIR: ${{ runner.temp }}/vietfont-ci-data
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -36,6 +34,10 @@ jobs:
       - name: Typecheck and build frontend
         run: npm run build
         working-directory: frontend
+        # Frontend build-time and dev-proxy environment.
+        env:
+          VITE_API_BASE_URL: /api
+          VFK_API_ORIGIN: http://127.0.0.1:18765
 
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
@@ -59,10 +61,16 @@ jobs:
       - name: Import app and generate OpenAPI
         run: uv run python -c "from app.main import app; spec = app.openapi(); assert spec.get('paths'); print('Backend import and OpenAPI check passed')"
         working-directory: backend
+        # Backend environment.
+        env:
+          VFK_DATA_DIR: ${{ runner.temp }}/vietfont-ci-data
 
       - name: Start app and verify API plus frontend
         shell: bash
         working-directory: backend
+        # Backend runtime environment.
+        env:
+          VFK_DATA_DIR: ${{ runner.temp }}/vietfont-ci-data
         run: |
           set -euo pipefail
           log_file="$RUNNER_TEMP/vietfont-uvicorn.log"
