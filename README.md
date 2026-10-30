@@ -35,6 +35,10 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 FastAPI tự phục vụ frontend/dist nếu thư mục build tồn tại.
 
+## CI
+
+- `.github/workflows/ci.yml` chạy trên mọi push, pull request và khi chạy thủ công. Workflow build/typecheck frontend, đồng bộ dependency backend từ `uv.lock`, biên dịch module Python và kiểm tra import/OpenAPI.
+
 ## Luồng MVP
 
 1. Tạo project và tải lên font.

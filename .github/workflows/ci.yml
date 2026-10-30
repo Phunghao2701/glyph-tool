@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Build and smoke-check web app
+    runs-on: ubuntu-latest
+    env:
+      VFK_DATA_DIR: ${{ runner.temp }}/vietfont-ci-data
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Typecheck and build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/pyproject.toml
+            backend/uv.lock
+
+      - name: Install Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync locked backend dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Compile backend modules
+        run: uv run python -m compileall -q app
+        working-directory: backend
+
+      - name: Import app and generate OpenAPI
+        run: uv run python -c "from app.main import app; spec = app.openapi(); assert spec.get('paths'); print('Backend import and OpenAPI check passed')"
+        working-directory: backend
+
+      - name: Start app and verify API plus frontend
+        shell: bash
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          log_file="$RUNNER_TEMP/vietfont-uvicorn.log"
+          health_file="$RUNNER_TEMP/vietfont-health.json"
+          .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 18765 >"$log_file" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+
+          ready=0
+          for _ in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:18765/api/health >"$health_file" \
+              && curl --fail --silent http://127.0.0.1:18765/api/projects >/dev/null \
+              && curl --fail --silent http://127.0.0.1:18765/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            cat "$log_file"
+            echo "App did not serve the API and built frontend."
+            exit 1
+          fi
+
+          grep -Eq '"status"[[:space:]]*:[[:space:]]*"ok"' "$health_file"
