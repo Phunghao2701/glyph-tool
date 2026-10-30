@@ -1,0 +1,22 @@
+{
+ "src": "src/<Font>.otf",
+ "max_overlap": 9000,
+ "O": {},
+ "U": {},
+ "o": {},
+ "u": {},
+ "all": {
+  "reach": 60,
+  "rise": 80,
+  "thin": 30,
+  "head": 100,
+  "p": 2.15,
+  "t0": 0.29,
+  "dyO": 0,
+  "dyU": 0
+ },
+ "lc_ratio": 0.9,
+ "lc_wratio": 1.07,
+ "_ghi_chu": "Thông số râu horn5 (đường tâm kệ + thanh đậm). Chữ thường = chữ hoa × lc_ratio (dáng) × lc_wratio (độ dày). Số mẫu — kéo lại trên khung kéo của trang duyệt. dyU: gốc râu Ư lên / xuống (gốc Ơ đi theo). hook_params: file .params.json do hook_stroke.py ghi → mục B có nhóm thanh Dấu hỏi.",
+ "hook_params": "final/1.00n/hook_single.params.json"
+}

@@ -1,0 +1,21 @@
+{
+ "family": "Ten Font Italic VN",
+ "style": "Bold Italic",
+ "full": "Ten Font Italic VN Bold Italic",
+ "ps": "TenFontItalicVN-BoldItalic",
+ "typo_family": "Ten Font Italic VN",
+ "typo_style": "Bold Extra Tall Italic",
+ "bar": 30,
+ "clip": 36,
+ "stack_mode": {
+  "acute": "top",
+  "grave": "top"
+ },
+ "italic_bit": true,
+ "axis": "body",
+ "top_gap": {
+  "acute": 28,
+  "grave": 28
+ },
+ "stack_rule": "axis"
+}

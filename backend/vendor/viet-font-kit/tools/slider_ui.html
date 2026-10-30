@@ -1,0 +1,413 @@
+<div class="sec" data-sec="R"><div class="sec-h"><div class="badge">B</div><div class="h2box"><div class="h2row"><h2>Kéo râu, dấu thanh, gõ thử</h2><details class="info"><summary aria-label="Giải thích khung này" title="Giải thích">i</summary><div class="info-pop"><p>Một thanh chỉnh cả chữ hoa lẫn chữ thường. Tự lưu.</p><p>↺ lùi từng bước của riêng thanh đó (bấm đúp: về mặc định). ↶ ↷ hoàn tác cả khung. Ctrl+Z / Ctrl+Shift+Z hoàn tác mọi thao tác trên trang theo thứ tự (thanh kéo, bàn vẽ, lựa chọn).</p><p>Kern sau râu: chữ đứng sau ư ơ khép như sau u o, râu vẫn cách ≥ 50.</p></div></details></div></div></div>
+<div class="hu11">
+  <div class="hu11-grpbar" id="hu11-grpbar"></div>
+  <div class="hu11-main">
+    <div class="hu11-left">
+      <div class="hu11-vwrap"><div class="hu11-view" id="hu11-view" title="Bấm đúp vào một chữ để mở chữ đó ở Bàn vẽ"></div><span class="hu-status hu-chip" id="hu11-status">đang kết nối…</span><span class="hu-tip hu-chip" id="hu11-tip" hidden></span></div>
+      <div class="hu11-txt" hidden><label class="hu11-tl">Chữ mẫu</label>
+  <textarea id="hu11-text" rows="3" spellcheck="false">ƯỚC MƠ · THƯỞNG THỨC · TƯƠNG LAI · ỦY BAN
+ỜỚỞỠỢ ỪỨỬỮỰ ờớởỡợ ừứửữự ƯƠ ươ
+ẦẤẨẪẬ ầấẩẫậ ỀẾỂỄỆ ồốổỗộ
+ịạẹọụỵ ỊẠẸỌỤỴ · mì, mị · người ở phường</textarea></div>
+    </div>
+    <div class="hu11-right">
+      <div class="hu11-tools">
+        <input type="range" id="hu11-size" min="16" max="600" value="60" hidden aria-hidden="true" tabindex="-1">
+        <input type="checkbox" id="hu11-guide" hidden><input type="checkbox" id="hu11-adv" hidden><input type="checkbox" id="hu11-kern" checked hidden>
+        
+      </div>
+      <input type="checkbox" id="hu11-hl" checked hidden>
+    <div class="hu11-ctl" id="hu11-ctl"></div>
+    </div>
+  </div>
+  <div class="hu-meas" id="hu11-meas" hidden></div>
+  <details class="more hu-det" hidden><summary>Số đo chi tiết</summary><div class="hu-meas" id="hu11-more"></div></details>
+</div>
+</div>
+<style>
+.hu11-txt{display:flex;flex-direction:column;gap:4px;margin:10px 0 0}.hu11-txt textarea{width:100%;box-sizing:border-box}
+.hu11-under{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.hu11-under label{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border:1px solid var(--pg-line-2,#999);border-radius:99px;cursor:pointer;color:var(--pg-mut);opacity:.6;user-select:none}
+.hu11-under label::before{content:"";width:9px;height:9px;border-radius:50%;background:#e5243b}
+.hu11-under label:has(input:checked){background:var(--pg-txt,#111);color:var(--pg-bg,#fff);border-color:var(--pg-txt,#111);opacity:1;font-weight:600}
+.hu11-under input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.hu11-under label:has(input:focus-visible){outline:2px solid var(--pg-accent,#36f);outline-offset:2px}
+.hu-link{display:grid;place-items:center;width:24px;height:24px;padding:0;border:1px solid transparent;border-radius:6px;background:none;color:var(--pg-mut,#999);opacity:.55;cursor:pointer}
+.hu-nolink{width:24px;height:24px}
+/* dấu hỏi dựng bằng nhiều mảnh chồng: viền 0,7 px cùng màu che vệt khử răng cưa giữa các mảnh */
+#hu11-view path.hkp{stroke:currentColor}#hu11-view g[fill="#e5243b"] path.hkp{stroke:#e5243b}
+.hu-link:hover{opacity:1;background:var(--pg-sunk,#eee)}
+.hu-link[aria-pressed="true"]{color:var(--pg-txt,#111);opacity:1}
+.hu-link[aria-pressed="true"] .cut{display:none}
+.hu-grp{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 8px}   /* giống .vb-tabs của Đồng loạt */
+.hu-grp button{font:500 14px/1.2 var(--vk-ui,inherit);padding:6px 0 8px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--pg-mut,#666);cursor:pointer;white-space:nowrap}
+.hu-grp button[aria-pressed="true"]{color:var(--pg-txt,#111);border-bottom-color:var(--pg-txt,#111);font-weight:600}
+.hu-grp button:focus-visible{outline:2px solid var(--pg-accent,#36f);outline-offset:2px}
+#hu11-ctl .hu-card[hidden]{display:none}
+.hu11-left{position:sticky;top:8px;align-self:start}
+@media (max-width:820px){.hu11-left{position:static}}
+.hu-status{font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.hu-status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--pg-mut-2,#999)}
+.hu-status[data-s="ok"]::before{background:var(--pg-ok,#2a2)}
+.hu-status[data-s="busy"]::before{background:var(--pg-warn,#e90)}
+.hu-det{margin-top:2px;font-size:12px}.hu-det summary{cursor:pointer;opacity:.75}
+.hu11-tools label:has(input[type=checkbox]){display:inline-flex;align-items:center;font-size:12px;padding:3px 10px;border:1px solid var(--pg-line-2,#999);border-radius:99px;cursor:pointer;color:var(--pg-mut);opacity:.6;user-select:none}
+.hu11-tools label:has(input[type=checkbox]:checked){background:var(--pg-txt,#111);color:var(--pg-bg,#fff);border-color:var(--pg-txt,#111);opacity:1;font-weight:600}
+.hu11-tools label input[type=checkbox]{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.hu11-tools label:has(input[type=checkbox]:focus-visible){outline:2px solid var(--pg-accent,#36f);outline-offset:2px}
+.hu11-main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:760px){.hu11-main{grid-template-columns:minmax(0,1fr)}}
+.hu11-left,.hu11-ctl,.hu11-right{min-width:0}
+.hu11-right{display:flex;flex-direction:column;gap:10px}
+.hu11-right .hu11-tools{gap:6px 8px;margin:0}
+.hu11-right .hu11-tools:not(:has(>:not([hidden]))){display:none}   /* hàng công cụ toàn ô ẩn → không chiếm chỗ, thẻ thanh kéo ngang đỉnh khung xem */
+.hu11-vwrap{position:relative}
+.hu-chip{position:absolute;top:8px;right:10px;z-index:2;padding:3px 9px 3px 7px;border-radius:99px;background:var(--pg-card,#fff);color:var(--pg-mut,#666);border:1px solid var(--pg-line,#ddd);font-size:11px;line-height:1.4;pointer-events:none}
+.hu11-ctl .hu-card{display:flex;flex-direction:column;gap:6px;min-width:0;padding:14px 16px;margin:0;border:1px solid var(--pg-line-2,#ccc);border-radius:var(--vk-r,14px);background:var(--pg-card)}
+.hu11-ctl .hu-cardh{margin:0 0 6px;font-size:14px;font-weight:700;color:var(--pg-txt)}   /* thẻ div, KHÔNG dùng fieldset / legend: Safari iOS vẽ legend đè lên viền (người dùng 28/10) */
+.hu11-ctl .hu-cardh small{font-weight:400;font-size:11.5px;color:var(--pg-mut)}
+.hu-row{display:grid;grid-template-columns:86px minmax(0,1fr) 52px 26px;align-items:center;gap:6px;margin:0;font-size:12.5px}
+.hu-row>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--pg-txt)}
+.hu-num{width:52px;box-sizing:border-box;font:12px var(--vk-mono,ui-monospace,monospace);padding:4px 6px;border:1px solid var(--pg-line-2,#bbb);border-radius:6px;background:var(--pg-bg);color:var(--pg-txt);text-align:right;font-variant-numeric:tabular-nums}
+.hu-num{-moz-appearance:textfield;appearance:textfield}.hu-num::-webkit-inner-spin-button,.hu-num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.hu-rev{display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:none;color:var(--pg-mut,#999);cursor:pointer}
+.hu-rev.on{color:var(--pg-txt,#111)}
+.hu-rev:hover{background:var(--pg-sunk,#eee)}
+.hu11-ur{display:inline-flex;gap:6px}.hu11-ur button{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:12px;padding:4px 10px 4px 8px;border:1px solid var(--pg-line-2,#999);border-radius:6px;background:var(--pg-card,#fff);color:var(--pg-txt,#111);cursor:pointer}.hu11-ur button:disabled{opacity:.4;cursor:default}
+.hu-row input{width:100%;min-width:0}.hu-row input[type=range]{accent-color:var(--pg-txt)}   /* cùng màu thanh kéo tab Đồng loạt */
+.hu-row output{font-variant-numeric:tabular-nums;text-align:right}
+.hu11-tools{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin:0 0 6px;align-items:center}
+.hu11-tl{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}.hu11-txt .hu11-tl{margin:0}
+.hu11 textarea{width:100%;box-sizing:border-box;font:15px/1.4 inherit;padding:8px;border:1px solid #bbb;border-radius:8px}
+.hu11-view{overflow:auto;max-height:70vh;background:var(--pg-card);color:var(--pg-txt);border:1px solid var(--pg-line,#ddd);border-radius:10px;padding:6px 0}
+.hu11-view svg{display:block}
+.hu11-view [data-ch]{cursor:pointer}
+/* khung bao chữ: hover (máy tính) / chạm 1 lần (điện thoại) — nổi rõ trên nền sáng lẫn tối (người dùng 27/10) */
+.hu11-view rect.hu-hit{rx:28px;stroke:transparent;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.hu11-view .hu-c:hover rect.hu-hit,.hu11-view .hu-c.sel rect.hu-hit{fill:color-mix(in srgb,var(--pg-txt) 10%,transparent);stroke:color-mix(in srgb,var(--pg-txt) 60%,transparent)}
+.hu11-view .hu-c.sel rect.hu-hit{fill:color-mix(in srgb,var(--pg-txt) 16%,transparent);stroke:var(--pg-txt)}
+@media (hover:none){.hu11-view .hu-c:hover rect.hu-hit{fill:transparent;stroke:transparent}.hu11-view .hu-c.sel rect.hu-hit{fill:color-mix(in srgb,var(--pg-txt) 16%,transparent);stroke:var(--pg-txt)}}
+.hu-tip{top:auto!important;bottom:8px;left:10px;right:auto!important;color:var(--pg-txt)!important}
+.hu-meas,.hu-note,.hu-status{font-size:12px;opacity:.8;margin-top:6px;font-variant-numeric:tabular-nums}
+.hu11-vwrap .hu-chip{margin:0;opacity:1}
+.hu11-btns button{font:inherit;font-size:12px;padding:3px 9px;border:1px solid var(--pg-line-2,#999);border-radius:6px;background:var(--pg-card,#fff);color:var(--pg-txt,#111);cursor:pointer;margin-top:4px}
+</style>
+<script>
+(function(){
+var D = __HORN_DATA__, DOCID = '__HORN_DOC__';
+if (D.all.dyU == null) D.all.dyU = 0;   // dữ liệu cũ chưa có thanh gốc râu Ư
+var HKP = D.hook || null;   // thông số dấu hỏi vẽ lại (hook_stroke.py) — có thì hiện nhóm thanh “Dấu hỏi”
+var DEF = {all: D.all, misc: {lc_ratio: D.lc_ratio, lc_wratio: D.lc_wratio}, dot: {s: 1}, tone: {sx: 0, sy: 0, fx: 0, fy: 0, rx: 0, ry: 0, xx: 0, xy: 0, nx: 0, ny: 0},
+  shape: {sh: 100, st: 100, fh: 100, ft: 100, xh: 100, xt: 100, nr: 0},   // dáng nét dấu (chế độ Chi tiết, 27/10) — vị trí dấu chuyển sang tab Đồng loạt
+  hook: HKP ? {h: HKP.h || 165, thick: HKP.thick, thin: HKP.thin, ball: HKP.ball, neck: HKP.neck != null ? HKP.neck : HKP.thin, tear_len: HKP.tear_len || 60, foot: HKP.foot || 22,
+    taper_p: HKP.taper_p || 1, stress_mix: HKP.stress_mix || 0, wscale: HKP.wscale || 1, ball_k: HKP.ball_k || 1, foot_k: HKP.foot_k || 1} : {}};
+var HKMODE = HKP && HKP.profile ? 'profile' : HKP && HKP.mode === 'taper' ? 'taper' : 'stress';   // profile = học từ font mẫu · taper = đậm đầu thuôn dần về đuôi
+/* HKO: font chép dấu hỏi có sẵn (font nghiêng chép từ bản đứng) → nhóm “Dấu hỏi” chỉnh DÁNG nét thật bằng 4 số (người dùng 28/10):
+   bề ngang, chiều cao, dày đầu móc, dày đuôi móc — cùng công thức tools/nghieng/tt/hook_tf.py (build_it.py cfg "hook_tf") */
+var HKO = !HKP && !!D.hook_tf;
+if (HKO) DEF.hook = {w: 100, h: 100, head: 100, tail: 100};
+function hookTFpts(P, q){ var n = P.length; if (n < 6) return P; var i, hd = 0, e = 0;
+  for (i = 1; i < n; i++){ if (P[i][0] < P[hd][0] || (P[i][0] === P[hd][0] && P[i][1] > P[hd][1])) hd = i; if (P[i][1] + P[(i + 1) % n][1] < P[e][1] + P[(e + 1) % n][1]) e = i; }
+  var ta = e, tb = (e + 1) % n, A = [hd], B = [hd], j = hd; while (j !== ta && j !== tb){ j = (j + 1) % n; A.push(j); }
+  var ot = j === ta ? tb : ta; j = hd; while (j !== ot){ j = (j - 1 + n) % n; B.push(j); } if (A.length + B.length - 1 < n) return P;
+  function cum(ch){ var s = [0]; for (var k = 1; k < ch.length; k++) s.push(s[k - 1] + Math.hypot(P[ch[k]][0] - P[ch[k - 1]][0], P[ch[k]][1] - P[ch[k - 1]][1])); var L = s[s.length - 1] || 1; return s.map(function(v){ return v / L; }); }
+  function at(ch, ts, t){ for (var k = 1; k < ch.length; k++) if (ts[k] >= t){ var u = ts[k] === ts[k - 1] ? 0 : (t - ts[k - 1]) / (ts[k] - ts[k - 1]), a = P[ch[k - 1]], b = P[ch[k]]; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; } return P[ch[ch.length - 1]]; }
+  var tA = cum(A), tB = cum(B), x0 = 1e9, x1 = -1e9, yb = 1e9; P.forEach(function(p){ x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); yb = Math.min(yb, p[1]); }); var bx = (x0 + x1) / 2, O = P.map(function(p){ return p.slice(); });
+  [[A, tA, B, tB], [B, tB, A, tA]].forEach(function(z){ z[0].forEach(function(idx, k){ var t = z[1][k], o = at(z[2], z[3], t), x = P[idx][0], y = P[idx][1], cx = (x + o[0]) / 2, cy = (y + o[1]) / 2, m = (q.head + (q.tail - q.head) * t) / 100;
+    O[idx] = [bx + (cx - bx) * q.w / 100 + (x - cx) * m, yb + (cy - yb) * q.h / 100 + (y - cy) * m, P[idx][2]]; }); });
+  return O; }
+function hookTF(d, q){ return d.split(/(?=M)/).filter(function(x){ return x.trim(); }).map(function(sd){
+  var tk = sd.match(/[MLQHVZ]|-?\d*\.?\d+(?:e-?\d+)?/gi) || [], P = [], i = 0, c = 'M', lx = 0, ly = 0;
+  while (i < tk.length){ var t = tk[i]; if (/^[MLQHVZ]$/i.test(t)){ c = t.toUpperCase(); i++; continue; }
+    if (c === 'M' || c === 'L'){ lx = +tk[i]; ly = +tk[i + 1]; P.push([lx, ly, 1]); i += 2; } else if (c === 'H'){ lx = +tk[i]; P.push([lx, ly, 1]); i++; } else if (c === 'V'){ ly = +tk[i]; P.push([lx, ly, 1]); i++; }
+    else if (c === 'Q'){ lx = +tk[i + 2]; ly = +tk[i + 3]; P.push([+tk[i], +tk[i + 1], 0], [lx, ly, 1]); i += 4; } else i++; }
+  var n = P.length; if (n > 1 && P[n - 1][2] && Math.abs(P[0][0] - P[n - 1][0]) < 1e-6 && Math.abs(P[0][1] - P[n - 1][1]) < 1e-6) P.pop();
+  var R = hookTFpts(P, q), f = function(p){ return (Math.round(p[0] * 10) / 10) + ' ' + (Math.round(p[1] * 10) / 10); }, o = 'M' + f(R[0]);
+  for (var k = 1; k <= R.length; k++){ var p = R[k % R.length]; if (k === R.length && !R[R.length - 1][2]) break; if (p[2]) { if (k < R.length) o += 'L' + f(p); } else { o += 'Q' + f(p) + ' ' + f(R[(k + 1) % R.length]); k++; } }
+  return o + 'Z'; }).join(''); }
+var P = JSON.parse(JSON.stringify(DEF));
+var SL = {thin: ['cổ mảnh|nét mảnh ở cổ râu', 6, 50, 1], head: ['đầu đậm|nét đậm ở đầu râu', 40, 130, 1], p: ['thuôn|độ thuôn từ cổ tới đầu', 0.5, 3, 0.05], t0: ['giữ mảnh|giữ nét mảnh tới (tỉ lệ dọc râu)', 0, 0.7, 0.01],
+  reach: ['vươn ← →|vươn ngang', 30, 110, 1], rise: ['cao ↓ ↑|cao lên', 30, 130, 1], dyU: ['gốc Ư ↓ ↑|gốc râu Ư lên / xuống (gốc Ơ đi theo)', -160, 40, 1], dyO: ['Ơ ↓ ↑|Ơ lên / xuống', -80, 30, 1]};
+function bez(p0, p1, p2, p3, n){ var o = []; for (var i = 0; i <= n; i++){ var t = i / n, u = 1 - t;
+  o.push([u*u*u*p0[0] + 3*u*u*t*p1[0] + 3*u*t*t*p2[0] + t*t*t*p3[0], u*u*u*p0[1] + 3*u*u*t*p1[1] + 3*u*t*t*p2[1] + t*t*t*p3[1]]); } return o; }
+function oxAt(g, y){ var i = Math.round(y) - g.oy[0]; i = Math.max(0, Math.min(g.ox.length - 1, i)); return g.ox[i]; }
+var HC = {};
+function horn(L){
+  var up = L === L.toUpperCase(), k = P.all, key = L + JSON.stringify(k) + JSON.stringify(P.misc);
+  if (HC[key]) return HC[key];
+  var g = D.g[L], s = up ? 1 : P.misc.lc_ratio, top = D.g[up ? 'U' : 'u'].top;
+  // gốc râu Ư (dyU) dời lên / xuống trên mép phải thân U; gốc Ơ đi theo (cùng độ cao gốc Ư) + dyO riêng → đỉnh Ư = Ơ
+  var y0 = top + (k.dyU || 0) * s + ((L === 'O' || L === 'o') ? k.dyO : 0), x0 = (L === 'U' || L === 'u') ? (g.ox && k.dyU ? oxAt(g, y0 - 60) : g.x0) : oxAt(g, y0 - 50 * s) - 8;
+  var pts = bez([-70, -50], [6, -56], [k.reach + 2, -16], [k.reach, k.rise], 60).map(function(p){ return [x0 + p[0] * s, y0 + p[1] * s]; });
+  var n = pts.length - 1, ws = pts.map(function(_, i){ var t = i / n, u = Math.max(0, (t - k.t0) / (1 - k.t0)); return (k.thin + (k.head - k.thin) * Math.pow(u, k.p)) * (up ? 1 : P.misc.lc_wratio); });
+  var path = [], right = -1e9, hi = -1e9, clipX = x0 - (k.clip || 36), discs = [];
+  for (var i = 0; i < pts.length; i++){ var c = pts[i], rr = ws[i] / 2; right = Math.max(right, c[0] + rr); hi = Math.max(hi, c[1] + rr);
+    if (c[0] + rr >= clipX) discs.push([c[0], c[1], rr]);
+    path.push('M' + (c[0] - rr) + ' ' + c[1] + 'a' + rr + ' ' + rr + ' 0 1 0 ' + 2*rr + ' 0a' + rr + ' ' + rr + ' 0 1 0 ' + (-2*rr) + ' 0Z');
+    if (i){ var q = pts[i-1], rq = ws[i-1] / 2, dx = c[0] - q[0], dy = c[1] - q[1], dd = Math.hypot(dx, dy);
+      if (dd > Math.abs(rq - rr)){ var th = Math.atan2(dy, dx), ph = Math.acos((rq - rr) / dd), sx = [];
+        [th + ph, th - ph].forEach(function(an){ sx.push([q[0] + rq*Math.cos(an), q[1] + rq*Math.sin(an)], [c[0] + rr*Math.cos(an), c[1] + rr*Math.sin(an)]); });
+        path.push('M' + sx[0] + 'L' + sx[1] + 'L' + sx[3] + 'L' + sx[2] + 'Z'); } } }
+  var id = 'h11' + L + (++CID);
+  return HC[key] = {d: '<clipPath id="' + id + '"><rect x="' + clipX + '" y="-500" width="3000" height="3000"/></clipPath><g clip-path="url(#' + id + ')"><path d="' + path.join('"/><path d="') + '"/></g>',
+    right: right, top: hi, discs: discs};
+}
+var CID = 0;
+/* ---- dấu hỏi vẽ lại: CÙNG công thức hook_stroke.py (đường tâm + bề dày theo hướng nét, đầu giọt thuôn như tai g, chân cụt) ---- */
+var HKC = {};
+function discPts(c, r){ var o = []; for (var a = 0; a < 32; a++){ var t = a / 32 * 2 * Math.PI; o.push([c[0] + r * Math.cos(t), c[1] + r * Math.sin(t)]); } return o; }
+function ccwD(P, sg){ sg = sg || 1; var A = 0; for (var i = 0; i < P.length; i++){ var p = P[i], q = P[(i + 1) % P.length]; A += p[0] * q[1] - q[0] * p[1]; } if (A * sg < 0) P = P.slice().reverse();   // cùng chiều với đĩa → nonzero = hợp nét
+  return 'M' + P.map(function(p){ return (Math.round(p[0] * 10) / 10) + ' ' + (Math.round(p[1] * 10) / 10); }).join('L') + 'Z'; }
+function hookShape(wm){   // wm = nhân bề dày (dấu co nhỏ khi chồng / chữ hoa mà font giữ dày nhất = dấu ngã → HKP.wcomp)
+  wm = wm || 1; if (!HKP) return null; var q = P.hook, key = JSON.stringify(q) + wm.toFixed(3); if (HKC[key]) return HKC[key];
+  var Pp = HKP.path, pts = [], i;
+  for (i = 1; i < Pp.length; i += 3){ var seg = bez(Pp[i - 1], Pp[i], Pp[i + 1], Pp[i + 2], 40); pts = pts.concat(pts.length ? seg.slice(1) : seg); }
+  var n = pts.length - 1, ws = [], s = 0, st = HKP.stress || 1.8, tp = HKP.tear_p || 1, SS = 0;
+  for (i = 1; i <= n; i++) SS += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+  for (i = 0; i <= n; i++){ if (i) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    var a = pts[Math.max(0, i - 1)], b = pts[Math.min(n, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+    if (HKMODE === 'profile'){ var pr = HKP.profile, tt = s / (SS || 1), jj = 0; while (jj < pr.length - 2 && pr[jj + 1][0] < tt) jj++;   // cùng hook_stroke.py "profile"
+      var wp = (pr[jj][1] + (pr[jj + 1][1] - pr[jj][1]) * Math.max(0, Math.min(1, (tt - pr[jj][0]) / ((pr[jj + 1][0] - pr[jj][0]) || 1)))) * q.wscale * wm;
+      wp *= 1 + (q.ball_k - 1) * Math.max(0, 1 - tt / 0.15); wp *= 1 + (q.foot_k - 1) * Math.max(0, (tt - 0.85) / 0.15); ws.push(wp); continue; }
+    if (HKMODE === 'taper'){ var wt = q.ball + (q.foot - q.ball) * Math.pow(s / (SS || 1), q.taper_p);   // đậm đầu thuôn dần về đuôi (cùng hook_stroke.py "taper")
+      if (q.stress_mix) wt *= (1 - q.stress_mix) + q.stress_mix * (0.55 + 0.45 * Math.abs(dy / L)); ws.push(wt); continue; }
+    var w = q.thin + (q.thick - q.thin) * Math.pow(Math.abs(dy / L), st);
+    if (s < q.tear_len) w = Math.max(w, q.ball + (q.neck - q.ball) * Math.pow(s / q.tear_len, tp));
+    var t = i / n; if (t > 0.85) w = w + (q.foot - w) * ((t - 0.85) / 0.15); ws.push(w); }
+  var path = [], x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (i = 0; i <= n; i++){ var c = pts[i], rr = ws[i] / 2; x0 = Math.min(x0, c[0] - rr); x1 = Math.max(x1, c[0] + rr); y0 = Math.min(y0, c[1] - rr); y1 = Math.max(y1, c[1] + rr);
+    path.push(ccwD(discPts(c, rr), -1));   // đĩa = đa giác 32 cạnh (cung 180° bị mơ hồ → vệt trắng)
+    if (i){ var pq = pts[i-1], rq = ws[i-1] / 2, ddx = c[0] - pq[0], ddy = c[1] - pq[1], dd = Math.hypot(ddx, ddy);
+      if (dd > Math.abs(rq - rr)){ var th = Math.atan2(ddy, ddx), ph = Math.acos((rq - rr) / dd), sx = [];
+        [th + ph, th - ph].forEach(function(an){ sx.push([pq[0] + rq*Math.cos(an), pq[1] + rq*Math.sin(an)], [c[0] + rr*Math.cos(an), c[1] + rr*Math.sin(an)]); });
+        path.push(ccwD([sx[0], sx[1], sx[3], sx[2]], -1)); } } }
+  var yc = y0 + (HKP.cut || 8), k = q.h / (y1 - yc), id = 'hk' + (++CID);
+  // MỘT path, mọi mảnh cùng chiều + nonzero → khử răng cưa một lần cho cả dấu (nhiều path chồng nhau trông đậm hơn nét thật)
+  return HKC[key] = {inner: '<clipPath id="' + id + '" clipPathUnits="userSpaceOnUse"><rect x="-9999" y="' + yc + '" width="19999" height="9999"/></clipPath><g clip-path="url(#' + id + ')"><path class="hkp" fill-rule="nonzero" stroke-width="0.4" stroke-linejoin="round" vector-effect="non-scaling-stroke" d="' + path.join('') + '"/></g>',
+    k: k, cx: (x0 + x1) / 2, yc: yc, w: (x1 - x0) * k}; }
+function hornDef(){ return JSON.stringify(P.all) === JSON.stringify(DEF.all) && P.misc.lc_ratio === DEF.misc.lc_ratio && P.misc.lc_wratio === DEF.misc.lc_wratio; }
+function applyHL(){ var HS = hlSet(), el = document.getElementById('hu11-hlcss'); if (!el){ el = document.createElement('style'); el.id = 'hu11-hlcss'; document.head.appendChild(el); }
+  var ks = Object.keys(HS); el.textContent = ks.length ? ks.map(function(t){ return '#hu11-view .hk-' + t; }).join(',') + '{fill:#e5243b}' : ''; }
+function hookChanged(){ return HKP && JSON.stringify(P.hook) !== JSON.stringify(DEF.hook); }
+var BBC = {}, _ms = null;
+function pathBB(d){ if (BBC[d]) return BBC[d]; if (!_ms){ _ms = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); _ms.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden'); document.body.appendChild(_ms); }
+  var p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', d); _ms.appendChild(p); var b = p.getBBox(); _ms.removeChild(p); return BBC[d] = {x: b.x, y: b.y, w: b.width, h: b.height}; }
+function hookAt(d){   // dấu hỏi mới đặt đúng chỗ dấu hỏi cũ của chữ: cùng đáy-giữa, giữ tỉ lệ cỡ (dấu chồng / chữ hoa)
+  var b = pathBB(d), sc = b.h / DEF.hook.h, H = hookShape(HKP.wcomp && sc < 0.98 ? 1 / sc : 1), kk = H.k * sc;
+  return '<g transform="translate(' + (b.x + b.w / 2) + ' ' + b.y + ') scale(' + kk + ') translate(' + (-H.cx) + ' ' + (-H.yc) + ')">' + H.inner + '</g>'; }
+function gap(mp, dx, dy, discs){ var m = 1e9; mp.forEach(function(p){ discs.forEach(function(c){ m = Math.min(m, Math.hypot(p[0] + dx - c[0], p[1] + dy - c[1]) - c[2]); }); }); return m; }
+/* dáng nét dấu — cùng công thức với tools/mark_shape.py (taper / round_) */
+var SHC = {};
+function ringsOf(d){ if (!_ms) pathBB(d); return d.split(/(?=M)/).filter(function(x){ return x.trim(); }).map(function(sd){
+  var p = document.createElementNS('http://www.w3.org/2000/svg', 'path'); p.setAttribute('d', sd); _ms.appendChild(p); var L = p.getTotalLength(), n = 96, R = [];
+  for (var i = 0; i < n; i++){ var q = p.getPointAtLength(L * i / n); R.push([q.x, q.y]); } _ms.removeChild(p); return R; }); }
+function ringsD(rs){ return rs.map(function(R){ return 'M' + R.map(function(q){ return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join('L') + 'Z'; }).join(''); }
+function taperR(rs, head, tail, horiz){ var pts = [].concat.apply([], rs); if (pts.length < 3 || (head === 100 && tail === 100)) return rs;
+  var n = pts.length, cx = 0, cy = 0; pts.forEach(function(p){ cx += p[0]; cy += p[1]; }); cx /= n; cy /= n;
+  var sxx = 0, syy = 0, sxy = 0; pts.forEach(function(p){ sxx += (p[0] - cx) * (p[0] - cx); syy += (p[1] - cy) * (p[1] - cy); sxy += (p[0] - cx) * (p[1] - cy); });
+  var a = 0.5 * Math.atan2(2 * sxy / n, (sxx - syy) / n), ax = Math.cos(a), ay = Math.sin(a); if ((horiz && ax < 0) || (!horiz && ay < 0)){ ax = -ax; ay = -ay; } var bx = -ay, by = ax;
+  var S = pts.map(function(p){ return [(p[0] - cx) * ax + (p[1] - cy) * ay, (p[0] - cx) * bx + (p[1] - cy) * by]; }), s0 = Infinity, s1 = -Infinity; S.forEach(function(q){ s0 = Math.min(s0, q[0]); s1 = Math.max(s1, q[0]); });
+  var L = (s1 - s0) || 1, B = 20, lo = [], hi = [], nc = []; S.forEach(function(q){ var i = Math.min(B - 1, Math.floor((q[0] - s0) / L * B)); lo[i] = lo[i] == null ? q[1] : Math.min(lo[i], q[1]); hi[i] = hi[i] == null ? q[1] : Math.max(hi[i], q[1]); });
+  var kn = []; for (var i = 0; i < B; i++){ nc[i] = lo[i] == null ? null : (lo[i] + hi[i]) / 2; if (nc[i] != null) kn.push(i); }
+  for (i = 0; i < B; i++) if (nc[i] == null){ var j = kn.reduce(function(b, k){ return Math.abs(k - i) < Math.abs(b - i) ? k : b; }, kn[0]); nc[i] = nc[j]; }
+  function ncat(t){ var u = t * B - 0.5, i = Math.max(0, Math.min(B - 1, Math.floor(u))), j = Math.min(B - 1, i + 1), f = Math.min(1, Math.max(0, u - i)); return nc[i] + (nc[j] - nc[i]) * f; }
+  return rs.map(function(R){ return R.map(function(p){ var s = (p[0] - cx) * ax + (p[1] - cy) * ay, m = (p[0] - cx) * bx + (p[1] - cy) * by, t = (s - s0) / L, c = ncat(t), k = (tail + (head - tail) * t) / 100, m2 = c + (m - c) * k;
+    return [cx + ax * s + bx * m2, cy + ay * s + by * m2]; }); }); }
+function roundR(rs, r){ var pts = [].concat.apply([], rs); if (!pts.length || !r) return rs; var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  pts.forEach(function(p){ x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }); var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R0 = 0;
+  pts.forEach(function(p){ R0 += Math.hypot(p[0] - cx, p[1] - cy); }); R0 /= pts.length; var f = r / 100;
+  return rs.map(function(R){ return R.map(function(p){ var d = Math.hypot(p[0] - cx, p[1] - cy) || 1, k = 1 + f * (R0 / d - 1); return [cx + (p[0] - cx) * k, cy + (p[1] - cy) * k]; }); }); }
+function shapeD(d, t){ var S = P.shape;
+  if (t === 'r'){ if (!HKO) return d; var q = P.hook; if (q.w === 100 && q.h === 100 && q.head === 100 && q.tail === 100) return d; var kh = 'r|' + q.w + '|' + q.h + '|' + q.head + '|' + q.tail + '|' + d; return SHC[kh] || (SHC[kh] = hookTF(d, q)); }
+  if (t === 'dot'){ if (!S.nr) return d; var key = 'n|' + S.nr + '|' + d; return SHC[key] || (SHC[key] = ringsD(roundR(ringsOf(d), S.nr))); }
+  if (!(t === 's' || t === 'f' || t === 'x')) return d; var h = S[t + 'h'], tl = S[t + 't']; if (h === 100 && tl === 100) return d;
+  var key2 = t + '|' + h + '|' + tl + '|' + d; return SHC[key2] || (SHC[key2] = ringsD(taperR(ringsOf(d), h, tl, t === 'x'))); }
+function glyph(ch, plain){
+  var e = D.G[ch]; if (!e) return {svg: '', w: ch === ' ' ? D.space : D.space};
+  var svg = '<path d="' + e.d + '"/>', w = e.w, T = P.tone, o = e.t ? [T[e.t + 'x'], T[e.t + 'y']] : [0, 0];
+  function red(t, x){ return plain ? x : '<g class="hk-' + t + '">' + x + '</g>'; }   // tô đỏ bằng CSS (applyHL) — đổi dấu đang chỉnh không phải dựng lại cả khung
+  if (e.h && e.rd && hornDef()){   // râu chưa chỉnh → vẽ đúng nét thật của font (râu đã ghép, dấu thanh đã né râu), giống hệt Xem trước
+    svg = '<path d="' + e.rd + '"/>' + (e.rh ? red('horn', '<path d="' + e.rh + '"/>') : ''); w = e.rw;   // râu rời → tô đỏ được
+    if (e.rm) svg += red(e.t, '<path transform="translate(' + o[0] + ' ' + o[1] + ')" d="' + shapeD(e.rm, e.t) + '"/>');
+  }
+  else if (e.h){ var h = horn(e.h); svg += red('horn', h.d); w = Math.max(w, Math.ceil(h.right + 10));
+    if (e.m){ var sh = 0, up = 0; var TG = D.tone_gap || 28; while (gap(e.mp, o[0] - sh, o[1], h.discs) < TG && sh < 40) sh += 4; while (gap(e.mp, o[0] - sh, o[1] + up, h.discs) < TG && up < 200) up += 4;
+      svg += red(e.t, e.t === 'r' && hookChanged() ? '<g transform="translate(' + (o[0] - sh) + ' ' + (o[1] + up) + ')">' + hookAt(e.m) + '</g>' : '<path transform="translate(' + (o[0] - sh) + ' ' + (o[1] + up) + ')" d="' + shapeD(e.m, e.t) + '"/>'); } }
+  else if (e.m) svg += red(e.t, e.t === 'r' && hookChanged() ? '<g transform="translate(' + o[0] + ' ' + o[1] + ')">' + hookAt(e.m) + '</g>' : '<path transform="translate(' + o[0] + ' ' + o[1] + ')" d="' + shapeD(e.m, e.t) + '"/>');
+  if (e.dot != null){ var s = P.dot.s, ph = D.ndot.h * s;
+    svg += red('dot', '<path transform="translate(' + (e.dot + T.nx) + ' ' + (-40 - ph / 2 + T.ny) + ') scale(' + s + ')" d="' + shapeD(D.ndot.d, 'dot') + '"/>'); }
+  return {svg: svg, w: w};
+}
+var KERN = true, LH = 1640, ASC = 1300;
+function hornAdv(e, R){   // cùng luật với autokern_horn.py: thân chữ sau đặt như sau chữ trơn, râu cách chữ sau ≥ max(khe trơn, 50)
+  var nx = D.G[R]; if (!e.h || !nx || !nx.lp || !e.rp) return null;
+  var B = D.band, h = horn(e.h), Rl = nx.lp, Pr = e.rp, s0 = e.w, T = 1e9, i, Hr = [];
+  for (i = 0; i < B[2]; i++) if (Rl[i] != null && Pr[i] != null) T = Math.min(T, s0 + Rl[i] - Pr[i]);
+  if (T > 1e8) T = 50;
+  for (i = 0; i < B[2]; i++){ var y0 = B[0] + i * B[1], y1 = y0 + B[1], m = null;
+    h.discs.forEach(function(c){ var dy = c[1] < y0 ? y0 - c[1] : (c[1] > y1 ? c[1] - y1 : 0); if (dy < c[2]){ var x = c[0] + Math.sqrt(c[2]*c[2] - dy*dy); if (m == null || x > m) m = x; } });
+    Hr.push(m); }
+  var s = s0;
+  for (i = 0; i < B[2]; i++) if (Hr[i] != null && Rl[i] != null && (Pr[i] == null || Hr[i] > Pr[i] + 1)) s = Math.max(s, Math.max(T, 50) - (Rl[i] - Hr[i]));
+  return s;
+}
+/* mở chữ ở Bàn vẽ (người dùng 27/10): máy tính = BẤM ĐÚP (rê chuột chỉ hiện khung bao); điện thoại = chạm 1 lần hiện khung + gợi ý,
+   chạm lần nữa đúng chữ đó trong 3 s = mở. Đang chụm 2 ngón / vừa chụm xong / vừa kéo → không tính là chạm, khỏi nhảy tab ngoài ý muốn. */
+(function(){
+  var HV = document.getElementById('hu11-view'), TIP = document.getElementById('hu11-tip'), selCh = null, selT = 0, multiT = 0, st = null, tt = 0;
+  function go(ch){ clear(); if (window.__VK_GO) window.__VK_GO('ve', ch); }
+  function clear(){ selCh = null; [].forEach.call(HV.querySelectorAll('.hu-c.sel'), function(c){ c.classList.remove('sel'); }); if (TIP) TIP.hidden = true; }
+  function mark(c){ clear(); selCh = c.getAttribute('data-ch'); selT = Date.now(); c.classList.add('sel');
+    if (TIP) { TIP.textContent = 'Chạm lần nữa để mở “' + selCh + '” ở Bàn vẽ'; TIP.hidden = false; clearTimeout(tt); tt = setTimeout(clear, 3000); } }
+  HV.addEventListener('dblclick', function(e){ var c = e.target.closest && e.target.closest('.hu-c'); if (!c) return; e.preventDefault(); e.stopPropagation(); go(c.getAttribute('data-ch')); });
+  HV.addEventListener('touchstart', function(e){ if (e.touches.length > 1) { multiT = Date.now(); st = null; clear(); return; } var t = e.touches[0]; st = { x: t.clientX, y: t.clientY, t: Date.now() }; }, { passive: true });
+  HV.addEventListener('touchmove', function(e){ if (!st) return; var t = e.touches[0]; if (e.touches.length > 1 || Math.hypot(t.clientX - st.x, t.clientY - st.y) > 10) st = null; }, { passive: true });
+  HV.addEventListener('touchend', function(e){ if (e.touches.length) { multiT = Date.now(); st = null; return; }
+    var s0 = st; st = null; if (!s0 || Date.now() - multiT < 600 || Date.now() - s0.t > 500) return;
+    var c = e.target.closest && e.target.closest('.hu-c'); if (!c) { clear(); return; }
+    e.preventDefault();   // chặn click / bấm đúp giả lập sau chạm
+    if (selCh === c.getAttribute('data-ch') && Date.now() - selT < 3000) go(selCh); else mark(c); }, { passive: false });
+})();
+function renderText(){
+  var lines = document.getElementById('hu11-text').value.split('\n'), out = '', maxW = 0, guide = document.getElementById('hu11-guide').checked, advOn = document.getElementById('hu11-adv').checked; KERN = document.getElementById('hu11-kern').checked;
+  lines.forEach(function(line, li){ var x = 0, base = ASC + li * LH, row = '';
+    var chs = Array.from(line);
+    chs.forEach(function(ch, ci){ var g = glyph(ch), e = D.G[ch], adv = g.w;
+      if (KERN && e && e.h && ci + 1 < chs.length){ var s = hornAdv(e, chs[ci + 1]); if (s != null) adv = Math.min(g.w, Math.round(s)); }
+      if (ch !== ' ') row += '<g class="hu-c" data-ch="' + ch.replace(/"/g, '&quot;') + '"><rect class="hu-hit" data-ch="' + ch.replace(/"/g, '&quot;') + '" x="' + x + '" y="' + (base - 1050) + '" width="' + Math.max(g.w, 60) + '" height="' + LH + '" fill="transparent"/>';   // vùng bấm: mở chữ này ở Bàn vẽ
+      row += '<g data-ch="' + ch.replace(/"/g, '&quot;') + '" transform="translate(' + x + ' ' + base + ') scale(1,-1)">' + (D.slant ? '<g transform="matrix(1 0 ' + D.slant + ' 1 0 0)">' + g.svg + '</g>' : g.svg) + '</g>' + (ch !== ' ' ? '</g>' : '');   // font nghiêng: dữ liệu ở không gian dựng thẳng, nghiêng lại theo trục chuẩn
+      if (advOn) row += '<line x1="' + x + '" x2="' + x + '" y1="' + (base - 1100) + '" y2="' + (base + 260) + '" stroke="#e8890c" stroke-width="3"/>';
+      x += adv; });
+    if (guide) (D.guide || [[892, 1094], [672, 886]]).forEach(function(r, j){ r.forEach(function(y){ out += '<line x1="0" x2="' + Math.max(x, 1000) + '" y1="' + (base - y) + '" y2="' + (base - y) + '" stroke="' + (j ? '#2a7de1' : '#d23') + '" stroke-width="3" stroke-dasharray="14 10" opacity=".55"/>'; }); });
+    out += row; maxW = Math.max(maxW, x); });
+  var sz = +document.getElementById('hu11-size').value, W = maxW + 80, H = lines.length * LH + 120;
+  document.getElementById('hu11-view').innerHTML = '<svg width="' + (W / 1000 * sz) + '" height="' + (H / 1000 * sz) + '" viewBox="-40 0 ' + W + ' ' + H + '"><g fill="currentColor">' + out + '</g></svg>';
+  var m = [];
+  [['Ư', 'U'], ['Ơ', 'O'], ['ư', 'u'], ['ơ', 'o']].forEach(function(a){ var g = glyph(a[0]); m.push(a[0] + ' +' + (g.w - D.g[a[1]].w)); });
+  var hu = horn('U'), hl = horn('u');
+  var ko = hornAdv(D.G['ư'], 'ơ'), kO = hornAdv(D.G['Ư'], 'Ơ');
+  var TN = {s: 'sắc', f: 'huyền', r: 'hỏi', x: 'ngã', n: 'nặng'};
+  var tone = ['s', 'f', 'x'].filter(function(t){ return P.shape[t + 'h'] !== 100 || P.shape[t + 't'] !== 100; }).map(function(t){ return TN[t] + ' đầu ' + P.shape[t + 'h'] + '% / đuôi ' + P.shape[t + 't'] + '%'; }).concat(P.shape.nr ? ['nặng tròn ' + P.shape.nr + '%'] : []).join(', ');
+  document.getElementById('hu11-meas').textContent = 'Rộng thêm ' + m.join(' · ') + ' · kern ươ ' + Math.round(Math.min(0, ko - glyph('ư').w)) + ' / ƯƠ ' + Math.round(Math.min(0, kO - glyph('Ư').w)) + (tone ? ' · dáng nét: ' + tone : '');
+  applyHL();
+  try { window.dispatchEvent(new Event('fv-b-change')); } catch (er) {}   // C (bàn vẽ) cập nhật “Xem trong chữ” theo số B
+  document.getElementById('hu11-more').textContent = 'đỉnh râu: Ư ' + Math.round(hu.top) + ' = Ơ ' + Math.round(horn('O').top) + ', ư ' + Math.round(hl.top) + ' = ơ ' + Math.round(horn('o').top) +
+    ' · đầu râu dày ≈ ' + Math.round(P.all.head * 0.97) + ' hoa / ' + Math.round(P.all.head * 0.97 * P.misc.lc_wratio) + ' thường' + (HKO ? ' · dấu hỏi ngang ' + P.hook.w + ' %, cao ' + P.hook.h + ' %, dày đầu ' + P.hook.head + ' % / đuôi ' + P.hook.tail + ' %' : '') + (HKP ? ' · dấu hỏi cao ' + P.hook.h + (HKMODE === 'profile' ? ', đậm × ' + P.hook.wscale + ', bầu × ' + P.hook.ball_k + ', chân × ' + P.hook.foot_k : HKMODE === 'taper' ? ', đầu ' + P.hook.ball + ' → đuôi ' + P.hook.foot + ', thuôn ' + P.hook.taper_p : ', đậm ' + P.hook.thick + ' / mảnh ' + P.hook.thin + ', giọt ' + P.hook.ball + ' → cổ ' + P.hook.neck) : '') + ' · dấu nặng ' + Math.round(D.ndot.w * P.dot.s) + '×' + Math.round(D.ndot.h * P.dot.s) + ' (chấm i ' + D.ndot.w + '×' + D.ndot.h + ')';
+}
+// chỉ thanh LINK ĐƯỢC mới có nút link: vị trí dấu thanh / dấu nặng (ngang với ngang, dọc với dọc). Thanh râu, cỡ dấu nặng đo khác đơn vị → không có nút.
+function canLink(group){ return false; }   // bỏ nút link (người dùng 27/10): mỗi thanh chỉnh riêng
+function row(group, key, lab, lo, hi, st){ var tip = lab.split('|')[1] || lab; lab = lab.split('|')[0]; return '<div class="hu-row" title="' + tip + '"><span>' + lab + '</span><input type="range" data-g="' + group + '" data-k="' + key + '" min="' + lo + '" max="' + hi + '" step="' + st + '" aria-label="' + lab + '">' +
+  '<input type="number" class="hu-num" data-g="' + group + '" data-k="' + key + '" step="' + st + '" aria-label="' + lab + ' (số)">' +
+  ''+(!canLink(group) ? '' : '<button type="button" class="hu-link" data-g="' + group + '" data-k="' + key + '" aria-pressed="' + (LINK[group + '.' + key] ? 'true' : 'false') + '" title="Link (gạch chéo = chưa link): các thanh cùng link và cùng loại (ngang / dọc / râu) chạy cùng nhau" aria-label="Link: ' + lab + '"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/><path class="cut" d="M3 3l18 18"/></svg></button>') +
+  '<button type="button" class="hu-rev" data-g="' + group + '" data-k="' + key + '" title="Lùi 1 bước của thanh này (bấm nhiều lần để lùi tiếp; bấm đúp = về mặc định)" aria-label="Lùi 1 bước: ' + lab + '"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v6h6"/><path d="M4.6 15a8 8 0 1 0 1.9-8.3L4 10"/></svg></button></div>'; }
+var HIST = [], FUT = [], PEND = {}, INR = false;
+function push(st){ HIST.push(st); FUT = []; urBtns(); if (window.__UB) __UB.note('slider'); }
+// một bước = danh sách thanh đổi cùng lúc (thanh đang kéo + các thanh link với nó)
+function commit(){ var list = Object.keys(PEND).map(function(id){ var a = id.split('.'); return {g: a[0], k: a[1], from: PEND[id], to: P[a[0]][a[1]]}; }).filter(function(it){ return it.from !== it.to; });
+  PEND = {}; if (list.length) push({list: list}); }
+function has(st, g, k){ return st.list.some(function(it){ return it.g === g && it.k === k; }); }
+function apply(st, which){ st.list.forEach(function(it){ setv(it.g, it.k, it[which]); }); renderText(); save(); }
+function undo(){ var st = HIST.pop(); if (!st) return; if (window.__UB) __UB.undone('slider'); FUT.push(st); apply(st, 'from'); urBtns(); }
+function redo(){ var st = FUT.pop(); if (!st) return; if (window.__UB) __UB.redone('slider'); HIST.push(st); apply(st, 'to'); urBtns(); }
+function toDef(g, k){ if (P[g][k] !== DEF[g][k]){ push({list: [{g: g, k: k, from: P[g][k], to: DEF[g][k]}]}); setv(g, k, DEF[g][k]); renderText(); save(); } }
+function undoOne(g, k){ for (var i = HIST.length - 1; i >= 0; i--) if (has(HIST[i], g, k)){ var st = HIST.splice(i, 1)[0]; if (window.__UB) __UB.undone('slider'); FUT.push(st); apply(st, 'from'); urBtns(); return; }
+  toDef(g, k); }
+// link: thanh bật link chạy cùng các thanh link khác CÙNG LOẠI (ngang với ngang, dọc với dọc, râu với râu)
+var LINK = {};   // không link (bỏ nút link 27/10)
+Object.keys(LINK).forEach(function(j){ if (!canLink(j.split('.')[0])) delete LINK[j]; });
+function kindOf(g, k){ return g === 'tone' ? 'pos-' + k[1] : g === 'dot' ? 'dot' : g === 'hook' ? 'hook' : 'horn'; }
+function typeOf(g, k){ if (g === 'shape') return k === 'nr' ? 'dot' : k[0]; return g === 'tone' ? (k[0] === 'n' ? 'dot' : k[0]) : g === 'dot' ? 'dot' : g === 'hook' ? 'r' : 'horn'; }
+function linkedWith(id){ if (!LINK[id]) return []; var a = id.split('.'), kd = kindOf(a[0], a[1]); return Object.keys(LINK).filter(function(j){ var b = j.split('.'); return LINK[j] && j !== id && kindOf(b[0], b[1]) === kd; }); }
+function lim(g, k){ var r = document.querySelector('#hu11-ctl input[type=range][data-g="' + g + '"][data-k="' + k + '"]'); return r ? [+r.min, +r.max, +r.step || 1] : [-1e9, 1e9, 1]; }
+// tô đỏ: dấu do nhóm / thanh đang chỉnh điều khiển (cùng các thanh link với nó)
+var HL = {on: true, grp: 'horn', id: null};
+function hlSet(){ var o = {}; if (!HL.on) return o;
+  if (HL.id){ [HL.id].concat(linkedWith(HL.id)).forEach(function(j){ var b = j.split('.'); o[typeOf(b[0], b[1])] = 1; }); return o; }
+  if (HL.grp === 'horn') o.horn = 1; else if (HL.grp === 'dot') o.dot = 1; else if (HL.grp === 'hook') o.r = 1; else ['s', 'f', 'r', 'x'].forEach(function(t){ o[t] = 1; });
+  return o; }
+function markActive(){ applyHL(); }
+function urBtns(){ var u = document.getElementById('hu11-undo'), r = document.getElementById('hu11-redo'); if (u) u.disabled = !HIST.length; if (r) r.disabled = !FUT.length; }
+function setv(g, k, v){ P[g][k] = v; document.querySelectorAll('#hu11-ctl [data-g="' + g + '"][data-k="' + k + '"]').forEach(function(t){ if (t.tagName === 'INPUT') t.value = v; });
+  var b = document.querySelector('#hu11-ctl .hu-rev[data-g="' + g + '"][data-k="' + k + '"]'); if (b) b.classList.toggle('on', v !== DEF[g][k]); }
+function build(){
+  var h = '<div class="hu-grp" role="group" aria-label="Nhóm thanh kéo"><button type="button" data-grp="horn" aria-pressed="true">Râu ơ ư</button>' + (HKP || HKO ? '<button type="button" data-grp="hook" aria-pressed="false">Dấu hỏi</button>' : '') + '<button type="button" data-grp="tone" aria-pressed="false">Dấu thanh</button><button type="button" data-grp="dot" aria-pressed="false">Dấu nặng</button></div>';
+  h += '<div class="hu-card" data-grp="horn"><div class="hu-cardh">Râu ơ ư <small>chung hoa + thường</small></div>';
+  Object.keys(SL).forEach(function(k){ var t = SL[k]; h += row('all', k, t[0], t[1], t[2], t[3]); });
+  h += row('misc', 'lc_ratio', 'cỡ thường ×|cỡ râu chữ thường × chữ hoa', 0.7, 1.1, 0.01) + row('misc', 'lc_wratio', 'dày thường ×|độ dày râu chữ thường ×', 0.7, 1.3, 0.01) + '</div>';
+  if (HKP) { h += '<div class="hu-card" data-grp="hook" hidden><div class="hu-cardh">' + (HKMODE === 'profile' ? 'Dấu hỏi · dáng + thanh đậm học từ font mẫu' : HKMODE === 'taper' ? 'Dấu hỏi · đậm đầu, thuôn dần về đuôi' : 'Dấu hỏi · thanh đậm, giọt theo tai chữ g') + '</div>';
+    (HKMODE === 'profile' ? [['h', 'cỡ (cao)', 120, 240, 1], ['wscale', 'độ đậm ×', 0.6, 1.8, 0.01], ['ball_k', 'bầu giọt ×', 0.6, 1.8, 0.01], ['foot_k', 'chân ×', 0.5, 2, 0.01]]
+      : HKMODE === 'taper' ? [['h', 'cỡ (cao)', 100, 340, 1], ['ball', 'đầu (đậm)', 20, 110, 1], ['foot', 'đuôi (mảnh)', 4, 90, 1], ['taper_p', 'độ thuôn', 0.3, 2.5, 0.05], ['stress_mix', 'pha thanh–đậm', 0, 1, 0.05]]
+      : [['h', 'cỡ (cao)', 120, 220, 1], ['thick', 'nét đậm (dọc)', 16, 70, 1], ['thin', 'nét mảnh (ngang)', 4, 40, 1], ['ball', 'bầu giọt', 16, 90, 1], ['neck', 'cổ giọt', 4, 50, 1], ['tear_len', 'độ dài giọt', 10, 160, 1], ['foot', 'chân', 8, 50, 1]])
+      .forEach(function(r){ h += row('hook', r[0], r[1], r[2], r[3], r[4]); });
+    h += '</div>'; }
+  if (HKO) { h += '<div class="hu-card" data-grp="hook" hidden><div class="hu-cardh">Dấu hỏi <small>chỉnh dáng dấu có sẵn</small></div>';
+    [['w', 'bề ngang %|bề ngang dấu hỏi % (nét không dày lên)', 60, 160, 1], ['h', 'chiều cao %|chiều cao dấu hỏi %', 60, 160, 1], ['head', 'dày đầu móc %|độ dày nét ở đầu giọt %', 50, 200, 1], ['tail', 'dày đuôi móc %|độ dày nét ở chân %', 50, 200, 1]]
+      .forEach(function(r){ h += row('hook', r[0], r[1], r[2], r[3], r[4]); }); h += '</div>'; }
+  h += '<div class="hu-card" data-grp="tone" hidden><div class="hu-cardh">Dấu thanh <small>độ dày đầu / đuôi nét</small></div>';
+  [['s', 'sắc', 'đầu', 'đuôi'], ['f', 'huyền', 'đầu', 'đuôi'], ['x', 'ngã', 'trái', 'phải']].forEach(function(t){ h += row('shape', t[0] + 'h', t[1] + ' ' + t[2] + ' %', 40, 180, 1) + row('shape', t[0] + 't', t[1] + ' ' + t[3] + ' %', 40, 180, 1); });
+  h += '</div><div class="hu-card" data-grp="dot" hidden><div class="hu-cardh">Dấu nặng <small>dáng</small></div>' + row('dot', 's', 'cỡ ×|cỡ × chấm i', 0.6, 1.3, 0.01) + row('shape', 'nr', 'tròn %|độ tròn %', 0, 100, 1) + '</div>';
+  var host = document.getElementById('hu11-ctl'), gb = document.getElementById('hu11-grpbar');
+  var cut = h.indexOf('</div>') + 6; gb.innerHTML = h.slice(0, cut); host.innerHTML = h.slice(cut);   // nhóm dấu (tab) nằm TRÊN khung xem, như Đồng loạt (người dùng 27/10)
+  function grp(v){ gb.querySelectorAll('.hu-grp button').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.grp === v)); });
+    host.querySelectorAll('.hu-card[data-grp]').forEach(function(f){ f.hidden = f.dataset.grp !== v; }); try { localStorage.setItem('fv-hu-grp', v); } catch (e) {} }
+  gb.querySelector('.hu-grp').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b){ grp(b.dataset.grp); HL.grp = b.dataset.grp; HL.id = null; markActive(); } });
+  function focusRow(t){ var r = t.closest && t.closest('.hu-row'); if (!r) return; var i = r.querySelector('input[type=range]'), id = i.dataset.g + '.' + i.dataset.k; if (HL.id !== id){ HL.id = id; markActive(); } }
+  host.addEventListener('pointerdown', function(e){ focusRow(e.target); }); host.addEventListener('focusin', function(e){ focusRow(e.target); });
+  host.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('.hu-link'); if (!b) return; var id = b.dataset.g + '.' + b.dataset.k;
+    LINK[id] = !LINK[id]; if (!LINK[id]) delete LINK[id]; b.setAttribute('aria-pressed', String(!!LINK[id])); markActive(); renderText(); save(); });
+  var g0 = 'horn'; try { g0 = localStorage.getItem('fv-hu-grp') || 'horn'; } catch (e) {} grp(g0); HL.grp = g0;
+  var hl = document.getElementById('hu11-hl'); try { if (localStorage.getItem('fv-hu-hl') === '0') hl.checked = false; } catch (e) {} HL.on = hl.checked;
+  hl.addEventListener('change', function(){ HL.on = hl.checked; try { localStorage.setItem('fv-hu-hl', hl.checked ? '1' : '0'); } catch (e) {} markActive(); });
+  host.addEventListener('input', function(e){ var t = e.target; if (!t.dataset.k || t.tagName !== 'INPUT') return; var v = parseFloat(t.value); if (isNaN(v)) return;
+    var g = t.dataset.g, k = t.dataset.k, id = g + '.' + k, d = v - P[g][k]; if (!(id in PEND)) PEND[id] = P[g][k]; setv(g, k, v);
+    linkedWith(id).forEach(function(j){ var b = j.split('.'), L = lim(b[0], b[1]), nv = Math.max(L[0], Math.min(L[1], P[b[0]][b[1]] + d));
+      if (!(j in PEND)) PEND[j] = P[b[0]][b[1]]; setv(b[0], b[1], +(Math.round(nv / L[2]) * L[2]).toFixed(4)); });
+    renderText(); save(); });
+  host.addEventListener('change', function(e){ var t = e.target; if (!t.dataset.k) return; commit(); });
+  host.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('.hu-rev'); if (!b) return; undoOne(b.dataset.g, b.dataset.k); });
+  host.addEventListener('dblclick', function(e){ var b = e.target.closest && e.target.closest('.hu-rev'); if (!b) return; toDef(b.dataset.g, b.dataset.k); });
+  var _u = document.getElementById('hu11-undo'), _r = document.getElementById('hu11-redo'); if (_u) _u.addEventListener('click', undo); if (_r) _r.addEventListener('click', redo);   // nút đã bỏ (27/10), Ctrl+Z vẫn chạy
+  if (window.__UB) __UB.reg('slider', undo, redo);
+  ['hu11-text', 'hu11-size', 'hu11-guide', 'hu11-adv', 'hu11-kern'].forEach(function(id){ document.getElementById(id).addEventListener('input', renderText); document.getElementById(id).addEventListener('change', renderText); });
+  document.getElementById('hu11-text').addEventListener('change', save);
+}
+function sync(){ ['all', 'misc', 'dot', 'tone', 'hook', 'shape'].forEach(function(g){ Object.keys(P[g]).forEach(function(k){ setv(g, k, P[g][k]); }); }); renderText(); }
+window.__vkChip=window.__vkChip||function(t,k,load){   /* MỘT trạng thái lưu cho cả Chỉnh dấu: chip Đồng loạt và Chi tiết luôn cùng chữ, cùng chấm màu (người dùng 28/10) */
+ var cur=window.__vkChipT||'';if(load&&t==='tự lưu'&&/^đã lưu|^đang lưu/.test(cur))return;
+ if(load&&t==='chưa lưu được'&&cur&&cur!=='đang kết nối…')return;
+ window.__vkChipT=t;['hu11-status','vb-status'].forEach(function(id){var e=document.getElementById(id);if(!e)return;e.textContent=t;if(k)e.dataset.s=k;else delete e.dataset.s;});};
+var db = null, timer = null, st = document.getElementById('hu11-status');
+function chip(t, k, load){ window.__vkChip(t, k, load); }
+function save(){ if (!db) return; clearTimeout(timer); chip('đang lưu…', 'busy');
+  timer = setTimeout(function(){ db.doc(DOCID).set({all: P.all, lc_ratio: P.misc.lc_ratio, lc_wratio: P.misc.lc_wratio, dot: P.dot, tone: P.tone, hook: P.hook, shape: P.shape, linkset: Object.keys(LINK), text: document.getElementById('hu11-text').value, updatedAt: new Date().toISOString()})
+    .then(function(){ chip('đã lưu ' + new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}), 'ok'); })
+    .catch(function(){ chip('lưu lỗi, thử lại'); }); }, 500); }
+build(); sync(); urBtns();
+var useP = (window.claude && window.claude.use) ? Promise.resolve().then(function(){ return window.claude.use('db'); }) : Promise.resolve(null);
+useP.then(function(d){ db = d; if (!db){ chip('chưa lưu được', null, true); return; }
+  return db.doc(DOCID).get().then(function(s){ if (s.exists){ var v = s.data() || {}; ['all', 'dot', 'hook', 'shape'].forEach(function(g){ if (v[g]) Object.assign(P[g], v[g]); });   /* vị trí dấu (tone) đã chuyển sang Đồng loạt → không nạp số cũ */ if (false){ LINK = {}; v.linkset.forEach(function(j){ if (canLink(j.split('.')[0])) LINK[j] = true; }); document.querySelectorAll('#hu11-ctl .hu-link').forEach(function(b){ b.setAttribute('aria-pressed', String(!!LINK[b.dataset.g + '.' + b.dataset.k])); }); } if (v.lc_ratio) P.misc.lc_ratio = v.lc_ratio; if (v.lc_wratio) P.misc.lc_wratio = v.lc_wratio;
+      if (v.text) document.getElementById('hu11-text').value = v.text; sync(); chip('tự lưu', 'ok', true); }
+    else chip('tự lưu', 'ok', true); }); })
+.catch(function(){ chip('chưa lưu được', null, true); });
+/* đổi VER ở A → khung kéo nạp nét + số mặc định của VER đó; số bạn đã kéo được giữ nếu khác mặc định cũ */
+(function(){ var VD = null, BD = JSON.parse(JSON.stringify(D));
+  function vd(){ if (!VD) { try { VD = JSON.parse((document.getElementById('fv-verdata') || {}).textContent || '{}'); } catch (e) { VD = {}; } } return VD; }   // khối dữ liệu nằm cuối trang → đọc lúc dùng
+  function useVer(tag){ var d = vd()[tag]; if (tag !== vd().__base && !d) return;
+    var untouched = JSON.stringify([P.all, P.misc, P.hook]) === JSON.stringify([DEF.all, DEF.misc, DEF.hook]);
+    Object.keys(D).forEach(function(k){ delete D[k]; }); Object.assign(D, JSON.parse(JSON.stringify(BD)));
+    var hu = d && d.hu || {}; Object.keys(hu).forEach(function(k){ if (k === 'G') Object.keys(hu.G).forEach(function(c){ D.G[c] = hu.G[c]; }); else D[k] = hu[k]; });
+    if (D.all.dyU == null) D.all.dyU = 0;
+    HKP = D.hook || null; HKMODE = HKP && HKP.profile ? 'profile' : HKP && HKP.mode === 'taper' ? 'taper' : 'stress';
+    DEF.all = D.all; DEF.misc = {lc_ratio: D.lc_ratio, lc_wratio: D.lc_wratio};
+    DEF.hook = HKP ? {h: HKP.h || 165, thick: HKP.thick, thin: HKP.thin, ball: HKP.ball, neck: HKP.neck != null ? HKP.neck : HKP.thin, tear_len: HKP.tear_len || 60, foot: HKP.foot || 22,
+      taper_p: HKP.taper_p || 1, stress_mix: HKP.stress_mix || 0, wscale: HKP.wscale || 1, ball_k: HKP.ball_k || 1, foot_k: HKP.foot_k || 1} : (HKO = !!D.hook_tf) ? {w: 100, h: 100, head: 100, tail: 100} : {};
+    if (untouched) { P.all = JSON.parse(JSON.stringify(DEF.all)); P.misc = JSON.parse(JSON.stringify(DEF.misc)); P.hook = JSON.parse(JSON.stringify(DEF.hook)); }
+    HC = {}; HKC = {}; BBC = {}; var g0 = document.querySelector('.hu-grp [aria-pressed="true"]'); build(); sync(); urBtns();
+    if (g0) { var b = document.querySelector('.hu-grp [data-grp="' + g0.dataset.grp + '"]'); if (b) b.click(); } }
+  window.addEventListener('fv-ver', function(e){ useVer(e.detail.tag); });
+  if (window.__FV_VER) useVer(window.__FV_VER); })();
+window.__h11 = {P: P, glyph: glyph, has: function(ch){ return !!D.G[ch]; },
+  changed: function(){ return JSON.stringify([P.all, P.misc, P.dot, P.tone, P.hook, P.shape]) !== JSON.stringify([DEF.all, DEF.misc, DEF.dot, DEF.tone, DEF.hook, DEF.shape]); }};
+try { window.dispatchEvent(new Event('fv-b-change')); } catch (er) {}
+})();
+</script>

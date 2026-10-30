@@ -1,0 +1,66 @@
+{
+ "h": 165,
+ "thick": 37,
+ "thin": 11,
+ "foot": 22,
+ "stress": 1.8,
+ "cut": 8,
+ "path": [
+  [
+   -48,
+   108
+  ],
+  [
+   -54,
+   150
+  ],
+  [
+   -30,
+   170
+  ],
+  [
+   0,
+   170
+  ],
+  [
+   32,
+   170
+  ],
+  [
+   52,
+   152
+  ],
+  [
+   52,
+   124
+  ],
+  [
+   52,
+   92
+  ],
+  [
+   12,
+   86
+  ],
+  [
+   2,
+   62
+  ],
+  [
+   -6,
+   46
+  ],
+  [
+   -5,
+   28
+  ],
+  [
+   -5,
+   6
+  ]
+ ],
+ "_ghi_chu": "Mẫu hook_stroke.py. from_g: đo tai giọt chữ g (bầu, cổ, dài) × ear_scale cho đầu dấu hỏi (luật hook-from-g). thick / thin = thân / nét ngang của font × tỉ lệ cỡ dấu. Đo lại cho font mới. Kiểu khác: \"mode\": \"taper\" (đậm đầu thuôn dần về đuôi) dùng ball → foot, taper_p, stress_mix.",
+ "from_g": true,
+ "ear_scale": 0.62,
+ "tear_p": 1.0
+}

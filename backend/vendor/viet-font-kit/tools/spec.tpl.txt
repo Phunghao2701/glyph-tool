@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:HT;src:url(HT.woff2)}@font-face{font-family:A;src:url(A.woff2)}@font-face{font-family:B;src:url(B.woff2)}@font-face{font-family:A0;src:url(A0.woff2)}
+body{margin:0;background:#fff}
+.p{width:340px;padding:14px 16px 12px;box-sizing:border-box;background:#fff;color:#14111c;font-family:A}
+.p .l{font:600 10.5px/1.2 system-ui,sans-serif;letter-spacing:.05em;color:#8a83a3;text-transform:uppercase;margin:10px 0 2px}
+.p .l:first-child{margin-top:0}
+.big{font-size:64px;line-height:1.18;letter-spacing:.04em;white-space:nowrap}
+.mid{font-size:44px;line-height:1.2;letter-spacing:.03em;white-space:nowrap}
+.txt{font-size:30px;line-height:1.25}
+.lab{display:flex;justify-content:space-between;width:300px;font:11px system-ui;color:#8a83a3;padding:0 4px}
+</style></head><body>
+<div id="out"></div>
+<script>
+const P={
+ marks:f=>`<div class="p" style="font-family:${f}"><div class="l">huyền · sắc · nặng · hỏi · ngã</div><div class="big">à á ạ ả ã</div><div class="big">À Á Ạ Ả Ã</div><div class="l">chồng dấu</div><div class="mid">ầ ấ ậ ẩ ẫ</div><div class="mid">ằ ắ ặ ẳ ẵ</div><div class="mid">Ẩ Ẳ Ở Ử Ỷ</div><div class="l">trong câu</div><div class="txt">Cẩn thận, bảo đảm, mỏi mệt, ngẫm nghĩ.</div></div>`,
+ kern:f=>`<div class="p" style="font-family:${f}"><div class="txt" style="font-size:40px">Người ướt, mượn, chưa thương, ươm tơ. ĐƯỜNG XƯA, ƯỚT ÁO</div></div>`,
+ horn:f=>`<div class="p" style="font-family:${f}"><div class="big">ơ ư Ơ Ư</div><div class="mid">ờ ớ ở ỡ ợ</div><div class="mid">ừ ứ ử ữ ự</div><div class="mid">Ờ Ớ Ở Ừ Ứ</div><div class="l">trong câu</div><div class="txt">Người ướt sũng, mượn ô, chưa từng nhớ. ĐƯỜNG XƯA</div></div>`
+};
+document.getElementById('out').innerHTML=['HT','A','B'].map(f=>P.marks(f)).join('')+['HT','A','B'].map(f=>P.horn(f)).join('')+['A0','A'].map(f=>P.kern(f)).join('');
+</script></body></html>

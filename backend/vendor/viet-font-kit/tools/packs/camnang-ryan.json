@@ -1,0 +1,91 @@
+{
+ "_doc": "Gói luật TÙY CHỌN — cẩm nang chưa kiểm chứng. Mặc định KHÔNG dùng. Chỉ nạp khi người dùng tự thêm (build_page.py: RULE_PACKS=packs/camnang-ryan.json hoặc PACKS=[...] trong content_rN.py). Mỗi ý ở đây đã đối chiếu với Donny Trương (Vietnamese Typography) và KHÔNG trùng nguồn chuyên môn — ý trùng / đã tìm được nguồn chuyên gia thì chuyển sang kho chuẩn rules.json.",
+ "name": "Cẩm nang Việt hoá — chưa kiểm chứng",
+ "updated": "2026-10-25 (bản 2 — đã tìm nguồn chuyên môn; còn 6 ý chưa kiểm chứng)",
+ "sources": [
+  {
+   "id": "CN-RYAN",
+   "group": "other",
+   "title": "Cẩm nang Việt hoá — chưa kiểm chứng",
+   "url": ""
+  }
+ ],
+ "rules": [
+  {
+   "id": "cn-stack-size",
+   "when": {
+    "marks": [
+     "circ|breve",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Con số cụ thể: dấu thanh chồng còn khoảng 75–85% dấu đơn. (Nguồn chuyên môn chỉ nói “có thể nhỏ hơn” — xem kho chuẩn, không có tỉ lệ.)",
+   "src": [
+    "CN-RYAN"
+   ]
+  },
+  {
+   "id": "cn-stack-weight",
+   "when": {
+    "marks": [
+     "circ|breve",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Khi thu nhỏ dấu chồng, tăng nhẹ độ dày nét để ở 10–12 pt vẫn đậm ngang dấu đơn. (Lưu ý: Google Fonts Guide lại dặn cụm dấu chồng không được quá nặng — cân hai ý khi chỉnh.)",
+   "src": [
+    "CN-RYAN"
+   ]
+  },
+  {
+   "id": "cn-hook-tilde",
+   "when": {
+    "marks": [
+     "hook"
+    ]
+   },
+   "text": "Dấu hỏi phải có nét móc xuống rõ; không làm dẹt tới mức giống sóng ngang của dấu ngã.",
+   "src": [
+    "CN-RYAN"
+   ]
+  },
+  {
+   "id": "cn-hook-small",
+   "when": {
+    "marks": [
+     "hook"
+    ]
+   },
+   "text": "Ở 10–12 pt, dấu hỏi ở ổ ể ở vẫn phải tách riêng, không bết thành khối đen.",
+   "src": [
+    "CN-RYAN"
+   ]
+  },
+  {
+   "id": "cn-right-height",
+   "when": {
+    "marks": [
+     "circ",
+     "acute|grave|hook"
+    ]
+   },
+   "text": "Đặt dấu thanh lệch phải dấu mũ giúp hạ đỉnh cụm dấu, ít đụng dòng trên. (Chưa đo kiểm trên nhiều font.)",
+   "src": [
+    "CN-RYAN"
+   ]
+  },
+  {
+   "id": "cn-style",
+   "when": {
+    "marks": [
+     "circ",
+     "acute|grave|hook"
+    ]
+   },
+   "text": "Font serif / editorial hay đặt dấu thanh lệch phải dấu mũ; font geometric / sans hay đặt chính giữa đỉnh.",
+   "src": [
+    "CN-RYAN"
+   ]
+  }
+ ]
+}

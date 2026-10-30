@@ -1,0 +1,427 @@
+{
+ "_doc": "Kho tài liệu Việt hoá font. sources.group: 'expert' = nguồn chuyên môn có link kiểm chứng được (ký hiệu *), 'other' = kiến thức CHƯA kiểm chứng (ký hiệu †) — KHÔNG nằm trong kho mặc định; chỉ nạp khi người dùng tự bật gói cẩm nang riêng (packs/*.json, biến RULE_PACKS), 'own' = lựa chọn thiết kế / đo kiểm của chính font này (ký hiệu #). Nếu ý trong tài liệu 'other' đã có ở nguồn 'expert' thì chỉ trích nguồn expert. rules.when: base (chữ gốc, 'any' = mọi chữ), marks (nhóm dấu NFD bắt buộc, 'a|b' = một trong: grave acute circ tilde breve hook horn dot), not, caps. Thêm nguồn mới: id mới, không đổi id cũ.",
+ "updated": "2026-10-26",
+ "groups": {
+  "expert": {
+   "sym": "*",
+   "title": "Nguồn chuyên môn — kiểm chứng được"
+  },
+  "other": {
+   "sym": "†",
+   "title": "Kiến thức khác — chưa kiểm chứng"
+  },
+  "own": {
+   "sym": "#",
+   "title": "Lựa chọn và đo kiểm của chính font này"
+  }
+ },
+ "sources": [
+  {
+   "id": "DT-DD",
+   "group": "expert",
+   "title": "Donny Trương — Vietnamese Typography (Việt Type, 2nd ed.): Diacritical Details",
+   "url": "https://vietnamesetypography.com/diacritical-details/"
+  },
+  {
+   "id": "DT-TM",
+   "group": "expert",
+   "title": "Donny Trương — Vietnamese Typography: Tone Marks",
+   "url": "https://vietnamesetypography.com/tone-marks/"
+  },
+  {
+   "id": "DT-DC",
+   "group": "expert",
+   "title": "Donny Trương — Vietnamese Typography: Design Challenges",
+   "url": "https://vietnamesetypography.com/design-challenges/"
+  },
+  {
+   "id": "DT-TR",
+   "group": "expert",
+   "title": "Donny Trương — Vietnamese Typography: Type Recommendations (khảo sát cách đặt dấu chồng của nhiều font)",
+   "url": "https://vietnamesetypography.com/type-recommendations/"
+  },
+  {
+   "id": "OW-KERN",
+   "group": "expert",
+   "title": "Office Watch — Kerning settings in Microsoft Word and Office",
+   "url": "https://office-watch.com/2018/kerning-settings-in-microsoft-office/"
+  },
+  {
+   "id": "GF-DIA",
+   "group": "expert",
+   "title": "Google Fonts Guide — Diacritics (Stacked diacritics; Design considerations)",
+   "url": "https://googlefonts.github.io/gf-guide/diacritics.html"
+  },
+  {
+   "id": "GL-VN",
+   "group": "expert",
+   "title": "Rainer Erich Scheichelbauer — Localize your font: Vietnamese double accents (Glyphs, 2018)",
+   "url": "https://glyphsapp.com/learn/localize-your-font-vietnamese-double-accents"
+  },
+  {
+   "id": "GL-ANC",
+   "group": "expert",
+   "title": "Rainer Erich Scheichelbauer — Advanced diacritics: multiple anchors (Glyphs, 2012, cập nhật 2022)",
+   "url": "https://glyphsapp.com/learn/advanced-diacritics-multiple-anchors"
+  },
+  {
+   "id": "RY-DUYET",
+   "group": "own",
+   "title": "Lựa chọn người dùng duyệt trên trang duyệt của chính font đang Việt hoá",
+   "url": ""
+  },
+  {
+   "id": "TEST",
+   "group": "own",
+   "title": "Đo kiểm trên chính font này: render có / không kern, đo độ rộng dòng và phần mực tràn khỏi 2 biên advance (linecheck.py)",
+   "url": ""
+  }
+ ],
+ "rules": [
+  {
+   "id": "axis",
+   "when": {
+    "base": "any"
+   },
+   "text": "Font đứng (không nghiêng) → trục đặt dấu là đường thẳng đứng qua tâm thân chữ; chỉ font nghiêng mới nghiêng trục. Không chắc thì hỏi lại.",
+   "src": [
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "src-marks",
+   "when": {
+    "base": "any"
+   },
+   "text": "XÉT DẤU FONT GỐC TRƯỚC: font gốc có anchor dấu (GPOS mark / mkmk) thì mọi chữ Việt xếp dấu đúng như font gốc xếp chuỗi tổ hợp — dấu chồng nằm theo anchor mkmk (thường trên đỉnh dấu mũ / trăng), khe và cỡ dấu như font gốc; dấu font thiếu (hỏi, nặng) mượn anchor dấu trên / dưới, khe bằng dấu sắc / dấu phẩy dưới gốc. Font có dấu sẵn mà không có anchor: giữ nguyên dáng, cỡ, vị trí dấu gốc, dấu mới đặt theo đáy / khe dấu gốc. Chỉ tự đặt dấu (luật mặc định) khi font không có gì để bám.",
+   "src": [
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "acute-grave",
+   "when": {
+    "marks": [
+     "acute|grave"
+    ]
+   },
+   "text": "Dấu sắc lệch nhẹ sang phải tâm chữ, dấu huyền lệch nhẹ sang trái; hai dấu cùng dáng, soi gương nhau, phần đáy hẹp hơn phần đỉnh; không rộng quá chữ gốc.",
+   "src": [
+    "DT-DD"
+   ]
+  },
+  {
+   "id": "hook-shape",
+   "when": {
+    "marks": [
+     "hook"
+    ]
+   },
+   "text": "Dấu hỏi giống dấu hỏi chấm bỏ chấm nhưng nhỏ hơn, chân cụt; khi đi với dấu khác phải tách rõ khỏi dấu đó.",
+   "src": [
+    "DT-DD",
+    "DT-TM"
+   ]
+  },
+  {
+   "id": "hook-from-g",
+   "when": {
+    "marks": [
+     "hook"
+    ]
+   },
+   "text": "Chữ g có tai hình giọt thì dấu hỏi vẽ theo giọt đó: đầu dấu hỏi là giọt thuôn dần lấy bầu, cổ và độ dài từ tai g của chính font (thu theo cỡ dấu), phần còn lại theo nét thanh–đậm của font. Không nén dấu ? để làm dấu hỏi.",
+   "src": [
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "hook-weight-tilde",
+   "when": {
+    "marks": [
+     "hook"
+    ]
+   },
+   "text": "Dấu hỏi dày nhất (bầu giọt, đo bằng vòng tròn lớn nhất lọt trong nét) bằng chỗ dày nhất của dấu ngã font gốc, ở mọi cỡ: dấu đơn, chữ hoa, dấu chồng. Dấu co nhỏ (chồng / chữ hoa) thì tăng độ đậm bù lại, không để mảnh đi (tools/hook_fit.py).",
+   "src": [
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "optical-center",
+   "when": {
+    "marks": [
+     "acute|grave|hook|tilde|circ|breve|dot"
+    ]
+   },
+   "text": "Đặt dấu theo tâm thị giác của chữ — tâm thị giác thường khác tâm hình học; các dấu cần trông cách chữ một khoảng như nhau.",
+   "src": [
+    "GF-DIA"
+   ]
+  },
+  {
+   "id": "stack-adjust",
+   "when": {
+    "marks": [
+     "circ|breve|horn",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Khi hai dấu đi cùng nhau, dạng dấu được phép chỉnh lại cho hài hoà, và dấu thanh phải tách rõ khỏi dấu phụ.",
+   "src": [
+    "DT-DD",
+    "DT-TM"
+   ]
+  },
+  {
+   "id": "stack-smaller",
+   "when": {
+    "marks": [
+     "circ|breve",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Dấu chồng có thể nhỏ hơn dấu đứng một mình để cân thị giác, nhất là trên chữ hoa; khoảng cách giữa các dấu thường sát và phải nhất quán trong cả font; không để cụm dấu quá cao hoặc quá nặng.",
+   "src": [
+    "GF-DIA"
+   ]
+  },
+  {
+   "id": "stack-pos",
+   "when": {
+    "marks": [
+     "circ",
+     "acute|grave|hook"
+    ]
+   },
+   "text": "Dấu thanh đặt bên phải dấu mũ là nhất quán và phổ biến nhất; đặt trên đỉnh cũng được tuỳ font. Cách làm thường gặp: sắc / huyền / hỏi dựa vào điểm neo phụ cạnh dấu mũ, dấu ngã đặt giữa trên dấu mũ.",
+   "src": [
+    "DT-DC",
+    "DT-TR",
+    "GL-ANC"
+   ]
+  },
+  {
+   "id": "stack-top",
+   "when": {
+    "marks": [
+     "circ",
+     "hook"
+    ]
+   },
+   "text": "Dấu hỏi kép đặt trên đỉnh dấu mũ (khe vd 40) hoặc bên phải dấu mũ (khe tối thiểu với ^ vd 24, tự nâng cho đủ); sắc / huyền chồng bên phải cách ^ ít nhất 18 để khỏi dính ở ố ấ ồ. Dựng cả hai để người dùng chọn.",
+   "src": [
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "stack-right-height",
+   "when": {
+    "marks": [
+     "circ",
+     "acute|grave|hook"
+    ]
+   },
+   "text": "Dấu hỏi kép lệch phải dấu mũ thường cho đỉnh cụm dấu thấp hơn đặt trên đỉnh — đo lại trên font đang làm.",
+   "src": [
+    "TEST"
+   ]
+  },
+  {
+   "id": "stack-unit",
+   "when": {
+    "marks": [
+     "circ|breve",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Khoảng cách giữa chữ gốc, dấu phụ và dấu thanh đều và tỉ lệ; dấu mũ khi chồng trên chữ thường đặt sát chữ hơn dấu mũ đứng một mình.",
+   "src": [
+    "DT-DD",
+    "DT-DC"
+   ]
+  },
+  {
+   "id": "circ",
+   "when": {
+    "marks": [
+     "circ"
+    ]
+   },
+   "text": "Dấu mũ hình chevron, đỉnh dày, hai chân mảnh; thường đối xứng; không rộng hơn chữ gốc.",
+   "src": [
+    "DT-DD"
+   ]
+  },
+  {
+   "id": "breve",
+   "when": {
+    "marks": [
+     "breve"
+    ]
+   },
+   "text": "Dấu trăng cong mềm, không nhọn như caron; đáy dày hơn hai đầu; không dính vào chữ.",
+   "src": [
+    "DT-DD"
+   ]
+  },
+  {
+   "id": "horn",
+   "when": {
+    "marks": [
+     "horn"
+    ]
+   },
+   "text": "Râu mọc từ góc trên bên phải chữ o / u; trên u có thể gắn ở đỉnh hoặc thấp hơn trên thân; râu ơ và ư cùng dáng, cùng độ cao vì hay đi liền (ươ).",
+   "src": [
+    "DT-DD",
+    "DT-DC"
+   ]
+  },
+  {
+   "id": "horn-space",
+   "when": {
+    "marks": [
+     "horn"
+    ]
+   },
+   "text": "Râu dài tạo khoảng hở trước chữ sau (Ư T); rút ngắn râu tốt hơn là kern cho hai chữ chồng lên nhau.",
+   "src": [
+    "DT-DC"
+   ]
+  },
+  {
+   "id": "horn-box",
+   "when": {
+    "marks": [
+     "horn"
+    ]
+   },
+   "text": "Word thân văn bản và Excel không kern, nên phần râu nằm ngoài 2 biên advance sẽ chạm chữ sau. Đo trên font này: bản 1.003 tràn 71 (ơ) / 119 (ư).",
+   "src": [
+    "OW-KERN",
+    "TEST"
+   ]
+  },
+  {
+   "id": "horn-hook",
+   "when": {
+    "marks": [
+     "horn",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Dấu thanh trên ơ ư phải tách rõ khỏi râu; dấu dịch trái / nâng lên nhưng đuôi vẫn trên trục chữ.",
+   "src": [
+    "DT-TM",
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "tilde",
+   "when": {
+    "marks": [
+     "tilde"
+    ]
+   },
+   "text": "Dấu ngã đối xứng vì gốc từ chữ N; hai đầu nhỏ hơn đoạn uốn giữa. Font có sẵn dấu ngã đẹp thì giữ.",
+   "src": [
+    "DT-DD"
+   ]
+  },
+  {
+   "id": "dot",
+   "when": {
+    "marks": [
+     "dot"
+    ]
+   },
+   "text": "Dấu nặng căn giữa dưới chữ; có thể giống hệt dấu chấm câu và chấm chữ i cho nhất quán, nếu không thì phải nhỏ hơn dấu chấm câu; ỵ dịch sang phải tránh nét đuôi. Lựa chọn người dùng: dấu nặng = chấm chữ i của font.",
+   "src": [
+    "DT-DD"
+   ]
+  },
+  {
+   "id": "caps",
+   "when": {
+    "caps": true,
+    "marks": [
+     "acute|grave|hook|tilde|circ|breve"
+    ]
+   },
+   "text": "Chữ hoa có dấu: giảm cỡ hoặc góc của dấu, đặt sát chữ hơn nhưng không chạm — dính dấu vào chữ hoa làm giảm khả năng đọc. Nên có bộ dấu riêng cho chữ hoa (.case): thường rộng hơn, thấp hơn, dẹt hơn dấu chữ thường, để tốn ít chiều cao và không va dòng trên.",
+   "src": [
+    "DT-DC",
+    "GF-DIA"
+   ]
+  },
+  {
+   "id": "leading",
+   "when": {
+    "caps": true,
+    "marks": [
+     "circ|breve|horn",
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "Chữ hoa có dấu chồng có thể vượt rất cao trên chiều cao chữ hoa; cần chỉnh thông số dọc của font để tránh bị cắt (clipping), vd nâng line biên trên bằng dấu cao nhất.",
+   "src": [
+    "DT-DC",
+    "GL-VN",
+    "RY-DUYET"
+   ]
+  },
+  {
+   "id": "i-marks",
+   "when": {
+    "base": "iI",
+    "marks": [
+     "acute|grave|hook|tilde"
+    ]
+   },
+   "text": "i có dấu bỏ chấm; dấu chìa nhẹ ra hai bên vẫn được miễn còn rõ.",
+   "src": [
+    "DT-DC"
+   ]
+  },
+  {
+   "id": "weight",
+   "when": {
+    "base": "any",
+    "marks": [
+     "acute|grave|hook|tilde|dot|circ|breve|horn"
+    ]
+   },
+   "text": "Dấu mang nghĩa nên phải đủ đậm, cân với thân chữ; dấu quá mảnh hoặc lệch cỡ làm yếu cả đoạn văn.",
+   "src": [
+    "DT-DC"
+   ]
+  },
+  {
+   "id": "no-collide",
+   "when": {
+    "base": "any",
+    "marks": [
+     "acute|grave|hook|tilde|circ|breve"
+    ]
+   },
+   "text": "Dấu không được va chữ bên cạnh. Word thân văn bản / Excel không kern nên mực của dấu cần nằm trong 2 biên advance.",
+   "src": [
+    "DT-DC",
+    "OW-KERN",
+    "TEST"
+   ]
+  },
+  {
+   "id": "punct-space",
+   "when": {
+    "base": "any"
+   },
+   "text": "Dấu câu chìa trái (LSB âm) cạnh chữ tròn chìa phải (RSB âm) sẽ dính chữ, nhất là dấu phẩy sau o ơ ổ. Đặt khoảng chừa trái của phẩy bằng dấu chấm của chính font.",
+   "src": [
+    "RY-DUYET",
+    "TEST"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1 @@
+document.querySelectorAll('.donebtn').forEach(function(b){ var w = b.nextElementSibling; var n = w.querySelectorAll('.dec').length; function lbl(){ b.textContent = (w.classList.contains('open') ? 'Ẩn ' : 'Hiện ') + n + ' quyết định đã chốt'; } lbl(); b.addEventListener('click', function(){ w.classList.toggle('open'); lbl(); }); });

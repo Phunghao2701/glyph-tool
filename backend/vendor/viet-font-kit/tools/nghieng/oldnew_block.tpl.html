@@ -1,0 +1,32 @@
+<div class="sec" data-sec="O"><div class="sec-h"><div class="badge">D</div><div class="h2box"><div class="h2row"><h2>So vị trí cũ</h2><details class="info"><summary aria-label="Giải thích mục So vị trí cũ" title="Giải thích">i</summary><div class="info-pop"><p>Chữ tô đặc là VER đang chọn; viền nét đứt đỏ là VER 7 để thấy dấu dời bao nhiêu.</p><p>Bật / tắt lớp nét đứt bằng nút “nét đứt VER 7”.</p></div></details></div></div></div>
+<div class="on-bar" role="group" aria-label="Chọn VER so sánh"><button type="button" data-v="8" aria-pressed="true">VER 8 · trăng như mũ</button><button type="button" data-v="9" aria-pressed="false">VER 9 · mọi dấu chồng theo trục</button><span class="on-sep"></span><button type="button" id="on-ghost" aria-pressed="true">nét đứt VER 7</button><input type="range" id="on-size" min="30" max="600" value="120" hidden aria-hidden="true" tabindex="-1"></div>
+<div class="on-vwrap"><div class="on-view" id="on-view"></div></div>
+<div class="on-tab" id="on-tab"></div>
+<div class="notewrap" data-note="O"></div></div>
+<style>
+.on-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.on-bar button{font:inherit;font-size:12.5px;border:1px solid var(--pg-line-2);background:transparent;color:var(--pg-mut);border-radius:8px;padding:5px 10px;cursor:pointer;opacity:.7}
+.on-bar button[aria-pressed="true"]{background:var(--pg-txt);color:var(--pg-bg);border-color:var(--pg-txt);opacity:1;font-weight:600}
+.on-sep{width:1px;height:20px;background:var(--pg-line-2);margin:0 4px}
+.on-sz{font-size:12.5px;color:var(--pg-mut);display:inline-flex;gap:6px;align-items:center}
+.on-view{overflow-x:auto;border:1px solid var(--pg-line);border-radius:10px;background:var(--pg-card);padding:8px}
+.on-view svg{display:block}
+.on-vwrap{position:relative}
+.on-tab{overflow-x:auto;margin-top:8px}
+.on-tab table{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.on-tab td,.on-tab th{border-bottom:1px solid var(--pg-line);padding:4px 8px;text-align:left;white-space:nowrap}
+</style>
+<script>(function(){
+var D=__ONDATA__, cur='8', ghost=true, sz=120;
+try{ghost=localStorage.getItem('fv-on-ghost')!=='0';}catch(e){}
+function row(chs){var x=0,h='';chs.split('').forEach(function(c){var n=D.v[cur][c],o=D.v['7'][c];
+ h+='<g transform="translate('+x+' 1300) scale(1,-1)"><path d="'+n[0]+'" fill="var(--pg-txt)"/>'+(ghost?'<path d="'+o[0]+'" fill="none" stroke="var(--pg-red)" stroke-width="7" stroke-dasharray="22 14"/>':'')+'</g>';x+=Math.max(n[1],o[1])+160;});return [h,x];}
+function draw(){var rows=[D.ch.slice(0,8),D.ch.slice(8)],out='',W=0;rows.forEach(function(r,i){var a=row(r);out+='<g transform="translate(0 '+(i*1700)+')">'+a[0]+'</g>';W=Math.max(W,a[1]);});
+ var H=rows.length*1700;document.getElementById('on-view').innerHTML='<svg width="'+(W/1000*sz)+'" height="'+(H/1000*sz)+'" viewBox="-40 0 '+W+' '+H+'" role="img" aria-label="So vị trí dấu">'+out+'</svg>';
+ document.querySelectorAll('.on-bar [data-v]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===cur));});
+ document.getElementById('on-ghost').setAttribute('aria-pressed',String(ghost));
+ document.getElementById('on-tab').innerHTML=__ONTAB__[cur];}
+document.querySelector('.on-bar').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+ if(b.id==='on-ghost'){ghost=!ghost;try{localStorage.setItem('fv-on-ghost',ghost?'1':'0');}catch(er){}}else if(b.dataset.v){cur=b.dataset.v;}draw();});
+document.getElementById('on-size').addEventListener('input',function(e){sz=+e.target.value;draw();});
+draw();})();</script>

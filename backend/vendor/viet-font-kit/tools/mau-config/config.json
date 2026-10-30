@@ -1,0 +1,40 @@
+{
+ "suffix": "VN",
+ "dot": {
+  "k": 0.66,
+  "lc": 154,
+  "uc": 154
+ },
+ "hook": {
+  "stack": 0.8,
+  "stack_w": 0.9,
+  "stack_place": "top",
+  "caps_flat": 0.9,
+  "horn_shift": 8,
+  "gap_right": 24,
+  "gap": 40,
+  "style": "question",
+  "h": 210,
+  "w": 74
+ },
+ "horn": {
+  "style": "shelf",
+  "reach": 60,
+  "rise": 80,
+  "advance": "contain",
+  "clear": 10
+ },
+ "horn_kern": 12,
+ "contain_marks": true,
+ "stack_gap_ag": 30,
+ "_ghi_chu": "Số mẫu của một font serif đậm cao hẹp 1000 UPM — đo lại cho font mới. \"marks\" (hook, hook_s, dot) thêm sau khi chạy hoi.py và lấy contour chấm chữ i của chính font. caps_stack_flat 1.0 = giữ dấu mũ gốc chữ hoa khi chồng; stack_gap_ag = khe sắc / huyền chồng phải (khe đều mọi chữ). anchor_marks: chỉ để khi font gốc có GPOS mark / mkmk (xếp dấu theo anchor font gốc); font không có anchor thì xoá khoá này. anchor_marks hook_uc / hook_stack / hook_uc_stack_flat: cỡ dấu hỏi chữ hoa / khi chồng / chữ hoa chồng dẹt — đo theo font mẫu (vd 0.94 / 0.8 / 0.9).",
+ "caps_stack_flat": 1.0,
+ "anchor_marks": {
+  "stack_hook": "hook",
+  "dot_gap": 40,
+  "dot_min": 10,
+  "hook_uc": 1.0,
+  "hook_stack": 1.0,
+  "hook_uc_stack_flat": 1.0
+ }
+}

@@ -1,0 +1,20 @@
+VFK - <Tên font> · VER n (1.00n) · bản test tiếng Việt
+Cài font: tắt Word/Canva → gỡ bản VFK - <Tên font> cũ (nếu có) → cài file .otf này → mở lại app.
+
+1. Dấu chồng (chữ hoa / thường)
+ẦẤẨẪẬ ẰẮẲẴẶ ỀẾỂỄỆ ỒỐỔỖỘ ỜỚỞỠỢ ỪỨỬỮỰ ỲÝỶỸỴ ÌÍỈĨỊ
+ầấẩẫậ ằắẳẵặ ềếểễệ ồốổỗộ ờớởỡợ ừứửữự ỳýỷỹỵ ìíỉĩị
+
+2. Đủ bảng chữ
+aàáảãạ ăằắẳẵặ âầấẩẫậ eèéẻẽẹ êềếểễệ iìíỉĩị oòóỏõọ ôồốổỗộ ơờớởỡợ uùúủũụ ưừứửữự yỳýỷỹỵ đ
+AÀÁẢÃẠ ĂẰẮẲẴẶ ÂẦẤẨẪẬ EÈÉẺẼẸ ÊỀẾỂỄỆ IÌÍỈĨỊ OÒÓỎÕỌ ÔỒỐỔỖỘ ƠỜỚỞỠỢ UÙÚỦŨỤ ƯỪỨỬỮỰ YỲÝỶỸỴ Đ
+
+3. Câu soi
+Người ươn ưa, cửa, TƯƠNG LAI · thưởng thức, mười, ưu tú, ƯỚC MƠ
+Phố cổ, “cổ,” ấm áp, ồn ào · ẨM THỰC · ủy ban, ỦY BAN · ơn nghĩa
+NGƯỜI ƯỚC MƠ · ĐẦU TƯ · KHẨN CẤP · ĐỘC LẬP · đã ĐƯỢC ghi nhận
+
+4. Kiểm Word
+- Gõ kiểu Unicode dựng sẵn và Unicode tổ hợp (Unikey) đều phải ra cùng một chữ, không hở khoảng.
+- Kern sau râu (ươ, ƯƠ khép lại) chỉ thấy khi bật Font → Advanced → Kerning for fonts.
+- Dòng mặc định cao hơn font gốc khoảng 8 % vì chừa chỗ cho dấu chồng chữ hoa (Ẩ, Ổ).

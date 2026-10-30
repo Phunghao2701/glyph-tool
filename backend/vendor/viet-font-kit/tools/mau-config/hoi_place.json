@@ -1,0 +1,13 @@
+{
+ "gap_lc": 60,
+ "gap_uc": 50,
+ "dx_lc": 0.04,
+ "dx_uc": 0.03,
+ "s_lc": 1.0,
+ "s_uc": 0.94,
+ "_ghi_chu": "Khe dấu hỏi–đỉnh thân (thường / hoa), độ lệch phải theo % bề rộng thân, cỡ. dx_unit: dời thêm từng chữ gốc theo đơn vị font (vd chữ a có chân phải: đo chân dấu hỏi ả với ẩ rồi dời cho khớp). gap_src: true = đáy dấu hỏi bằng đáy dấu sắc có sẵn của font gốc (luật src-marks).",
+ "dx_unit": {
+  "a": 0
+ },
+ "gap_src": true
+}

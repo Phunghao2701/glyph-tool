@@ -1,0 +1,24 @@
+[project]
+name = "viet-font-tool-system"
+version = "0.1.0"
+description = "Local Vietnamese font workflow system"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.34",
+  "python-multipart>=0.0.20",
+  "fonttools>=4.60",
+  "skia-pathops>=0.8",
+  "shapely>=2.1",
+  "uharfbuzz>=0.52",
+  "numpy>=2.2",
+  "scipy>=1.15",
+  "scikit-image>=0.25",
+  "matplotlib>=3.10",
+  "httpx>=0.28.1",
+  "keyring>=25.7.0",
+  "pyjwt[crypto]>=2.15.1",
+]
+
+[tool.uv]
+package = false

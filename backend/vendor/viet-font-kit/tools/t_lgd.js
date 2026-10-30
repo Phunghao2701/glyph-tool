@@ -1,0 +1,22 @@
+const { chromium } = require('playwright');
+(async () => { const b = await chromium.launch(); const S = process.argv[3]; const errs = [];
+  for (const [w, th] of [[1280, 'dark'], [390, 'dark']]) { const c = await b.newContext({ viewport: { width: w, height: 1000 }, isMobile: w < 500, hasTouch: w < 500, colorScheme: th }); const p = await c.newPage();
+    p.on('pageerror', e => errs.push(e.message));
+    await p.goto('file://' + process.argv[2]); await p.waitForTimeout(900); await p.evaluate(() => window.__VK_SHOW('chinh')); await p.waitForTimeout(300);
+    const q = () => p.evaluate(() => { const L = document.querySelector('.vk-lgd'); return { parent: L.parentElement.className, prev: L.previousElementSibling && L.previousElementSibling.className, items: [...L.querySelectorAll('button')].filter(b => !b.hidden).map(b => b.textContent + ':' + b.getAttribute('aria-pressed')).join(' | '), hiPaths: document.querySelectorAll('.vb-rows path.hi').length, links: document.querySelectorAll('.hu-link').length, toggles: document.querySelectorAll('.hu11-tools label, .hu11-under').length }; });
+    console.log(w, 'batch', JSON.stringify(await q()));
+    await p.evaluate(() => { const r = document.querySelector('.vb-ctl input[type=range][data-f="dy"]'); r.value = 50; r.dispatchEvent(new Event('input', { bubbles: true })); }); await p.waitForTimeout(150);
+    await p.click('.vk-lgd button[data-l="hi"]'); await p.waitForTimeout(150);
+    console.log(w, 'hi off →', await p.evaluate(() => getComputedStyle(document.querySelector('.vb-rows path.hi')).fill), await p.evaluate(() => document.getElementById('hu11-hl').checked));
+    await p.click('.vk-lgd button[data-l="hi"]');
+    const blk = await p.$('.vb-main'); await p.evaluate(() => document.querySelector('.vb-view').scrollIntoView({ block: 'start' })); await p.waitForTimeout(150);
+    await p.screenshot({ path: S + 'lg-batch-' + w + '.png', fullPage: false });
+    await p.evaluate(() => document.querySelector('.vb-ctl').scrollIntoView({ block: 'start' })); await p.waitForTimeout(150); await (await p.$('.vb-ctl')).screenshot({ path: S + 'lg-ctl-' + w + '.png' });
+    await p.click('.vb-ctl .vb-rev[data-r="dy"]'); await p.waitForTimeout(100); console.log(w, 'rev dy →', await p.$eval('.vb-ctl input[type=range][data-f="dy"]', e => e.value));
+    await p.click('.vk-cmode button[data-v="fine"]'); await p.waitForTimeout(250);
+    console.log(w, 'fine', JSON.stringify(await q()));
+    await p.click('.vk-lgd button[data-l="adv"]'); await p.waitForTimeout(150); console.log(w, 'adv on →', await p.evaluate(() => [document.getElementById('hu11-adv').checked, document.querySelectorAll('#hu11-view line[stroke="#e8890c"]').length]));
+    await p.click('.vk-lgd button[data-l="adv"]');
+    await p.evaluate(() => document.querySelector('#hu11-view').scrollIntoView({ block: 'start' })); await p.waitForTimeout(150); await p.screenshot({ path: S + 'lg-fine-' + w + '.png' });
+    await c.close(); }
+  console.log('errors', JSON.stringify(errs)); await b.close(); })();
