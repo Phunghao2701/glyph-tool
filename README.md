@@ -1,6 +1,8 @@
 # Viet Font Studio
 
-Ứng dụng local một người dùng để Việt hóa font từ file TTF/OTF tới bản export. Frontend React + TypeScript, backend FastAPI, SQLite và file đầu ra lưu cục bộ. Mỗi lần tạo hoặc tinh chỉnh VER đều cần provider AI đã kết nối; AI đề xuất hồ sơ phong cách/tham số, còn VFK rule engine luôn áp dụng quy tắc tạo font, giới hạn tham số và kiểm định tại local.
+For the current product, architecture, and UI decisions, start with [docs/spec.md](docs/spec.md).
+
+Ứng dụng local một người dùng để Việt hóa font từ file TTF/OTF tới bản export. Frontend React + TypeScript, backend FastAPI, SQLite và file đầu ra lưu cục bộ. Mỗi lần tạo hoặc tinh chỉnh VER đều cần provider AI đã kết nối; AI đề xuất hồ sơ phong cách/tham số, còn bộ quy tắc xử lý font luôn áp dụng giới hạn tham số và kiểm định tại máy.
 
 ## Chạy ở chế độ phát triển
 
