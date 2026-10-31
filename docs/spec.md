@@ -20,6 +20,48 @@ VietFont Studio is a local-first, single-user web application for turning a stat
 
 The application is not a multi-user hosted service. The browser UI is served locally, while font files, SQLite data, font construction, vector editing, validation, and export run on the user's machine or in the user's local Docker container.
 
+## Separate font discovery system
+
+The font search and comparison tool is a **separate application** from VietFont Studio, not another feature or page inside it. It has its own UI, API, catalog connectors, candidate cache, and persistence. It must not read or write VietFont Studio's database, local data directory, or internal APIs.
+
+The discovery app searches supported font catalogs, reads the catalog's source and license information, and downloads candidate files into its own temporary storage for format, metadata, and Vietnamese glyph-coverage inspection. It presents real-font previews and side-by-side comparison so users can find fonts that are stylistically useful but lack some required Vietnamese characters. Search and comparison do not require an AI provider.
+
+The standalone module plan, frontend/backend feature map, API proposal, security rules, and MVP acceptance criteria are in [font-discovery-tool-modules.md](font-discovery-tool-modules.md). That file is a starting blueprint for the separate tool, not a request to add its modules to this repository's running application.
+
+### Handoff boundary
+
+The proposed first handoff is a selected `.ttf`/`.otf` font plus a small provenance manifest containing the catalog/source URL, catalog identifier when available, family/style metadata, license URL/label, and SHA-256. The user downloads these files and manually imports the font file through VietFont Studio's existing **New Project** flow; the manifest stays beside it for traceability because the current import flow does not ingest sidecar metadata. This keeps both systems independently runnable and avoids hidden cross-database coupling. The exact bundle/download UX can be refined before implementation; a future one-click handoff would require an explicit import contract, not shared storage.
+
+Because the systems are separate, the discovery app can detect duplicates in its own candidate cache but cannot query VietFont Studio projects. Carry the content hash in the handoff manifest so a future explicit import contract can support duplicate checks without coupling the databases.
+
+```mermaid
+flowchart LR
+  subgraph Finder[Font Search and Compare — separate application]
+    A[Search terms and filters] --> B[Catalog adapters]
+    B --> C[Normalize metadata, source and license]
+    C --> D{Supported static TTF/OTF?}
+    D -- No --> E[Show as unsupported for VietFont Studio]
+    D -- Yes --> F[Download candidate to Finder temp storage]
+    F --> G[Inspect metadata and Vietnamese coverage locally]
+    G --> H[Preview and compare real font samples]
+    H --> I{Select candidate?}
+    I -- No --> A
+    I -- Yes --> J[Confirm license and prepare font plus provenance manifest]
+  end
+
+  J --> K[User downloads font and provenance manifest]
+
+  subgraph Studio[VietFont Studio — existing, independent application]
+    L[User imports font in New Project]
+    L --> M[Existing local font analysis]
+    M --> N[Connect/select AI provider]
+    N --> O[AI creates VER 1A/1B/1C]
+    O --> P[Review, refine, validate and export]
+  end
+
+  K -. user-selected font file .-> L
+```
+
 ## Product workflow
 
 1. **Create a project and import a source font.** Accept `.ttf` and `.otf` files within the backend upload limit. Read font metadata and coverage locally.
