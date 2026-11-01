@@ -7,7 +7,7 @@ usage:
 What it does
   * finds a body + top anchor for a e i o u y / A E I O U Y from the font's own precomposed letters
     (â, ê, ô, û, î, ÿ …) so the new letters share the original bodies and mark heights
-  * reuses the font's own acute / grave / tilde / circumflex / breve outlines
+  * reuses available source mark outlines and draws a fallback breve when absent
   * generates the marks a Latin font usually lacks: hook above (hỏi), dot below (nặng), horn (ơ ư)
     with stroke weight measured from the font's tilde, unless the config supplies custom outlines
   * stacks marks Vietnamese-style (sắc/huyền/hỏi to the right of the circumflex, ngã on top)
@@ -161,7 +161,22 @@ SRCMARK = {
 }
 TILDE_W = stroke_weight(SRCMARK["tilde"])
 if SRCMARK["breve"] is None:
-    sys.exit("font has no breve; draw one first")
+    # Some fonts have neither a standalone breve nor the precomposed ă glyph.
+    # Draw a shallow bowl using the font's circumflex dimensions and tilde stroke
+    # weight so Vietnamese breve forms can still be composed.
+    _cx0, _cy0, _cx1, _cy1 = bounds(SRCMARK["circ"])
+    _bw = max((_cx1 - _cx0) * 0.88, TILDE_W * 3)
+    _bh = max((_cy1 - _cy0) * 0.65, TILDE_W * 2.2)
+    _bs = min(max(TILDE_W, _bw * 0.06), _bh * 0.45, _bw * 0.16)
+    SRCMARK["breve"] = [[
+        ("moveTo", ((0, _bh),)),
+        ("curveTo", ((_bw * 0.24, -_bh / 3), (_bw * 0.76, -_bh / 3), (_bw, _bh))),
+        ("lineTo", ((_bw - _bs, _bh - _bs),)),
+        ("curveTo", ((_bw * 0.76 - _bs, -_bh / 3 + _bs),
+                     (_bw * 0.24 + _bs, -_bh / 3 + _bs), (_bs, _bh - _bs))),
+        ("closePath", ()),
+    ]]
+    print("vnfont: source breve missing; generated a fallback from circumflex size and tilde weight", file=sys.stderr)
 
 # ---------------- generated marks (local coords) ----------------
 hc = CFG.get("hook", {})

@@ -71,7 +71,9 @@ if gdef and gdef.GlyphClassDef:
 # kerning: đ Đ thừa hưởng cặp kern của d D
 pairs = {name: base for name, base, _r in NEW.values() if name not in _had}
 added_new = {n for n, *_r in NEW.values()} - set(_had)
-for lk in (f["GPOS"].table.LookupList.Lookup if added_new else []):
+gpos = f.get("GPOS")
+lookups = gpos.table.LookupList.Lookup if added_new and gpos and gpos.table.LookupList else []
+for lk in lookups:
     for st in lk.SubTable:
         if lk.LookupType == 9: st = st.ExtSubTable
         if getattr(st, "LookupType", lk.LookupType) != 2: continue   # chỉ PairPos (bỏ qua mark / mkmk / context)

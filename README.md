@@ -71,8 +71,20 @@ Volume dữ liệu Docker tách biệt với thư mục `.data` của lần ch�
 ## Cấu hình môi trường
 
 - Backend: sao chép `backend/.env.example` thành `backend/.env`. `VFK_DATA_DIR` chọn thư mục lưu database và font; đường dẫn tương đối được tính từ `backend/`.
+- Receiver Font Discovery: đặt `FONT_DISCOVERY_BEARER_TOKEN` trong `backend/.env` khi chạy local hoặc file `.env` gốc khi chạy Docker. Dùng cùng secret cho `VIETFONT_STUDIO_HANDOFF_TOKEN` trong backend Font Discovery; không đặt token trong frontend.
 - Frontend: sao chép `frontend/.env.example` thành `frontend/.env`. `VITE_API_BASE_URL` đặt đường dẫn API và `VFK_API_ORIGIN` đặt đích proxy trong Vite khi chạy development.
 - File `.env` và `.env.local` không được Git theo dõi. Chỉ chia sẻ các file `.env.example`, không đưa token hoặc API key vào đó.
+
+## Nhận font từ Font Discovery
+
+VietFont Studio cung cấp endpoint backend-to-backend `POST /api/integrations/font-discovery/handoffs` (ví dụ local: `http://127.0.0.1:8000/api/integrations/font-discovery/handoffs`). Cấu hình URL này trong `VIETFONT_STUDIO_HANDOFF_URL` của backend Font Discovery. Gửi `Authorization: Bearer <FONT_DISCOVERY_BEARER_TOKEN>`, `Idempotency-Key: <sha256>`, và multipart/form-data gồm:
+
+- `font`: file font gốc `.ttf` hoặc `.otf`, tối đa 50 MiB.
+- `manifest`: chuỗi JSON có `schema_version`, `source`, `source_font_id`, `discovery_record_id`, `family`, `format`, `source_url`, `license_name`, `license_url`, `license_status`, `sha256`, `coverage`, `coverage_classification`, các cờ xác nhận của người dùng, `selection_reason`, `created_at`.
+
+Backend kiểm tra token, idempotency key, định dạng/header font, SHA-256, coverage thiếu đã được AI xác nhận, và các xác nhận review/licensing; lưu manifest làm provenance; chống gửi lại theo discovery record ID và hash; rồi tạo project và xếp job phân tích font local. Font trùng hash đã có trong VietFont Studio trả về project hiện hữu. Gửi lại cùng discovery ID với nội dung khác trả `409`. Thành công mới trả `202` với `analysisJob`; bản trùng trả `200` với `duplicate: true`. Endpoint không nhận token từ browser. `Idempotency-Key` phải bằng SHA-256 của chuỗi `<discovery_record_id>:<font_sha256>`.
+
+Nếu `FONT_DISCOVERY_BEARER_TOKEN` chưa được cấu hình, endpoint trả `503` và không nhận font. Dùng một secret ngẫu nhiên dài, giữ riêng ở backend hai hệ thống, và chỉ gọi qua HTTPS khi hai hệ thống chạy trên các host khác nhau.
 
 ## Luồng MVP
 

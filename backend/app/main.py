@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
+import math
+import os
 import re
 import shutil
 import uuid
-from threading import Lock
+from datetime import datetime
 from pathlib import Path
+from threading import Lock
 from typing import Any, Literal
 
-from fastapi import Body, FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi import Body, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field, ValidationError
 from starlette.background import BackgroundTask
 
 from .backups import BackupError, backup_exports_to_google_drive, create_export_backup_zip
@@ -55,10 +60,32 @@ def stop_workers() -> None:
 
 
 drive_backup_lock = Lock()
+font_discovery_handoff_lock = Lock()
 
 
 class ProjectCreate(BaseModel):
     name: str = Field(default="Font project", min_length=1, max_length=120)
+
+
+class FontDiscoveryManifest(BaseModel):
+    schema_version: Literal[1]
+    source: str = Field(min_length=1, max_length=120)
+    source_font_id: str | None = Field(default=None, max_length=240)
+    discovery_record_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9._:-]+$")
+    family: str = Field(min_length=1, max_length=120)
+    format: Literal["ttf", "otf"]
+    source_url: AnyHttpUrl
+    license_name: str | None = Field(default=None, max_length=160)
+    license_url: str | None = Field(default=None, max_length=2048)
+    license_status: str = Field(default="unknown", max_length=40)
+    sha256: str = Field(pattern=r"^[a-fA-F0-9]{64}$")
+    coverage: dict[str, Any]
+    coverage_classification: dict[str, Any]
+    selection_reason: str = Field(min_length=1, max_length=2000)
+    candidate_reviewed_by_user: bool
+    license_acknowledged_by_user: bool
+    source_terms_acknowledged_by_user: bool
+    created_at: datetime
 
 
 class ProjectUpdate(BaseModel):
@@ -267,6 +294,106 @@ def _provider_result(callback):
         raise HTTPException(exc.status_code, detail={"code": exc.code, "message": str(exc)}) from exc
 
 
+def _require_font_discovery_bearer(authorization: str | None) -> None:
+    expected = os.environ.get("FONT_DISCOVERY_BEARER_TOKEN", "").strip()
+    if not expected:
+        raise HTTPException(503, "Font Discovery handoff is not configured on this server.")
+    scheme, separator, supplied = (authorization or "").partition(" ")
+    if not separator or scheme.lower() != "bearer" or not supplied.strip():
+        raise HTTPException(401, "A Bearer token is required.", headers={"WWW-Authenticate": "Bearer"})
+    if not hmac.compare_digest(supplied.strip().encode("utf-8"), expected.encode("utf-8")):
+        raise HTTPException(401, "Invalid Bearer token.", headers={"WWW-Authenticate": "Bearer"})
+
+
+def _validate_font_discovery_selection(manifest: FontDiscoveryManifest) -> None:
+    if not manifest.candidate_reviewed_by_user:
+        raise HTTPException(422, detail={"code": "CANDIDATE_REVIEW_REQUIRED", "message": "The candidate must be reviewed before handoff."})
+
+    classification = manifest.coverage_classification
+    confidence = classification.get("confidence")
+    if not (
+        classification.get("classification") == "missing"
+        and classification.get("fonttools_classification") == "missing"
+        and classification.get("ai_classification") == "missing"
+        and isinstance(confidence, (int, float))
+        and not isinstance(confidence, bool)
+        and math.isfinite(float(confidence))
+        and confidence >= 0.72
+        and confidence <= 1.0
+    ):
+        raise HTTPException(422, detail={"code": "COVERAGE_CLASSIFICATION_REQUIRED", "message": "AI must confirm missing Vietnamese coverage with at least 72% confidence."})
+
+    try:
+        present_value = manifest.coverage["present"]
+        required_value = manifest.coverage["required"]
+        percent_value = manifest.coverage["percent"]
+        if type(present_value) is not int or type(required_value) is not int:
+            raise TypeError
+        if isinstance(percent_value, bool) or not isinstance(percent_value, (int, float)):
+            raise TypeError
+        present = present_value
+        required = required_value
+        percent = float(percent_value)
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(422, detail={"code": "INVALID_COVERAGE_REPORT", "message": "Coverage counts are required in the handoff manifest."}) from None
+    expected_percent = round(100 * present / required, 1) if required > 0 else 0.0
+    if (
+        required <= 0 or present < 0 or present >= required or not math.isfinite(percent)
+        or percent >= 100 or abs(percent - expected_percent) > 0.1
+    ):
+        raise HTTPException(422, detail={"code": "INCOMPLETE_COVERAGE_REQUIRED", "message": "Handoff requires measured incomplete Vietnamese coverage."})
+
+    if manifest.license_status != "verified" and not (
+        manifest.license_acknowledged_by_user and manifest.source_terms_acknowledged_by_user
+    ):
+        raise HTTPException(422, detail={"code": "LICENSE_REVIEW_REQUIRED", "message": "Unknown license evidence requires user acknowledgement of the license and source terms."})
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        while chunk := source.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _find_project_with_source_hash(conn, sha256: str) -> str | None:
+    rows = conn.execute(
+        "SELECT id,source_path FROM projects WHERE source_path IS NOT NULL ORDER BY created_at"
+    ).fetchall()
+    for row in rows:
+        path = Path(row["source_path"])
+        if path.is_file() and hmac.compare_digest(_sha256_file(path), sha256):
+            return str(row["id"])
+    return None
+
+
+def _ensure_source_analysis_job(project_id: str) -> dict[str, Any] | None:
+    with db() as conn:
+        project = _project_or_404(conn, project_id)
+        if project["analysis_json"]:
+            return None
+        active_job = conn.execute(
+            "SELECT * FROM jobs WHERE project_id=? AND status IN ('queued','running','cancelling') ORDER BY created_at DESC LIMIT 1",
+            (project_id,),
+        ).fetchone()
+        if active_job:
+            return job_payload(active_job)
+    try:
+        return start_analysis(project_id)
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        with db() as conn:
+            active_job = conn.execute(
+                "SELECT * FROM jobs WHERE project_id=? AND status IN ('queued','running','cancelling') ORDER BY created_at DESC LIMIT 1",
+                (project_id,),
+            ).fetchone()
+            if active_job:
+                return job_payload(active_job)
+        raise
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "storage": str(DATA_ROOT)}
@@ -463,6 +590,155 @@ async def upload_source(project_id: str, file: UploadFile = File(...)) -> dict[s
     if previous_source_path:
         _remove_file_child(previous_source_path, PROJECTS_ROOT)
     return {"projectId": project_id, "filename": filename, "format": suffix[1:], "sizeBytes": size, "status": "uploaded"}
+
+
+@app.post("/api/integrations/font-discovery/handoffs", status_code=202)
+async def receive_font_discovery_handoff(
+    font: UploadFile = File(...),
+    manifest: str = Form(...),
+    authorization: str | None = Header(default=None),
+    idempotency_key: str = Header(..., alias="Idempotency-Key"),
+) -> JSONResponse:
+    _require_font_discovery_bearer(authorization)
+    if len(manifest.encode("utf-8")) > 64 * 1024:
+        raise HTTPException(413, "Handoff manifest exceeds the 64 KiB limit.")
+    try:
+        handoff_manifest = FontDiscoveryManifest.model_validate_json(manifest)
+    except ValidationError as exc:
+        errors = [
+            {"loc": list(error["loc"]), "msg": error["msg"], "type": error["type"]}
+            for error in exc.errors()
+        ]
+        raise HTTPException(422, detail={"code": "INVALID_HANDOFF_MANIFEST", "errors": errors}) from exc
+    _validate_font_discovery_selection(handoff_manifest)
+
+    if not re.fullmatch(r"[a-fA-F0-9]{64}", idempotency_key):
+        raise HTTPException(422, detail={"code": "INVALID_IDEMPOTENCY_KEY", "message": "Idempotency-Key must be a SHA-256 hex digest."})
+
+    supplied_name = (font.filename or "").replace("\\", "/")
+    filename = Path(supplied_name).name.strip().replace("\x00", "")[:200]
+    if not filename:
+        filename = f"{handoff_manifest.family}.{handoff_manifest.format}"
+    suffix = Path(filename).suffix.lower()
+    if suffix not in {".ttf", ".otf"} or suffix[1:] != handoff_manifest.format:
+        raise HTTPException(415, "The multipart font extension must match the manifest format (TTF or OTF).")
+
+    staging_dir = PROJECTS_ROOT / ".incoming"
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    staged_path = staging_dir / f"{uuid.uuid4().hex}.uploading"
+    final_path: Path | None = None
+    committed = False
+    size = 0
+    header = b""
+    digest = hashlib.sha256()
+    try:
+        with staged_path.open("wb") as output:
+            while chunk := await font.read(1024 * 1024):
+                if len(header) < 4:
+                    header += chunk[: 4 - len(header)]
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    raise HTTPException(413, "Font file exceeds the 50 MiB limit.")
+                digest.update(chunk)
+                output.write(chunk)
+        if size < 12:
+            raise HTTPException(400, "Uploaded font is empty or invalid.")
+        if handoff_manifest.format == "otf" and header != b"OTTO":
+            raise HTTPException(415, "The manifest declares OTF but the font header is not CFF OpenType.")
+        if handoff_manifest.format == "ttf" and header not in (b"\x00\x01\x00\x00", b"true"):
+            raise HTTPException(415, "The manifest declares TTF but the font header is not TrueType.")
+        received_sha256 = digest.hexdigest()
+        if not hmac.compare_digest(received_sha256, handoff_manifest.sha256.casefold()):
+            raise HTTPException(422, detail={"code": "SHA256_MISMATCH", "message": "Font bytes do not match the manifest SHA-256."})
+        expected_idempotency_key = hashlib.sha256(
+            f"{handoff_manifest.discovery_record_id}:{received_sha256}".encode()
+        ).hexdigest()
+        if not hmac.compare_digest(expected_idempotency_key, idempotency_key.casefold()):
+            raise HTTPException(422, detail={"code": "IDEMPOTENCY_KEY_MISMATCH", "message": "Idempotency-Key does not match the discovery record and font hash."})
+
+        handoff_id = ""
+        project_id = ""
+        duplicate = False
+        with font_discovery_handoff_lock:
+            with db() as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                existing_request = conn.execute(
+                    "SELECT id,idempotency_key,discovery_record_id,sha256,project_id FROM font_discovery_handoffs "
+                    "WHERE idempotency_key=? OR discovery_record_id=? LIMIT 1",
+                    (idempotency_key.casefold(), handoff_manifest.discovery_record_id),
+                ).fetchone()
+                if existing_request:
+                    if (
+                        existing_request["idempotency_key"] != idempotency_key.casefold()
+                        or existing_request["discovery_record_id"] != handoff_manifest.discovery_record_id
+                        or not hmac.compare_digest(existing_request["sha256"], received_sha256)
+                    ):
+                        raise HTTPException(409, detail={"code": "IDEMPOTENCY_CONFLICT", "message": "This idempotency key or discovery record ID was already used for a different handoff."})
+                    handoff_id = str(existing_request["id"])
+                    project_id = str(existing_request["project_id"])
+                    duplicate = True
+                else:
+                    existing_hash = conn.execute(
+                        "SELECT id,project_id FROM font_discovery_handoffs WHERE sha256=? ORDER BY created_at LIMIT 1",
+                        (received_sha256,),
+                    ).fetchone()
+                    if existing_hash:
+                        project_id = str(existing_hash["project_id"])
+                        duplicate = True
+                    else:
+                        project_id = _find_project_with_source_hash(conn, received_sha256) or ""
+                        duplicate = bool(project_id)
+
+                    handoff_id = uuid.uuid4().hex
+                    if not duplicate:
+                        project_id = uuid.uuid4().hex
+                        timestamp = now()
+                        target_dir = PROJECTS_ROOT / project_id / "source"
+                        target_dir.mkdir(parents=True, exist_ok=True)
+                        final_path = target_dir / f"{uuid.uuid4().hex}-{filename}"
+                        staged_path.replace(final_path)
+                        project_name = handoff_manifest.family.strip()[:120] or filename.rsplit(".", 1)[0][:120]
+                        conn.execute(
+                            "INSERT INTO projects(id,name,status,source_path,source_filename,source_format,created_at,updated_at) "
+                            "VALUES(?,?,?,?,?,?,?,?)",
+                            (project_id, project_name, "uploaded", str(final_path), filename,
+                             handoff_manifest.format, timestamp, timestamp),
+                        )
+
+                    conn.execute(
+                        "INSERT INTO font_discovery_handoffs(id,idempotency_key,discovery_record_id,sha256,project_id,manifest_json,status,created_at) "
+                        "VALUES(?,?,?,?,?,?,?,?)",
+                        (
+                            handoff_id, idempotency_key.casefold(), handoff_manifest.discovery_record_id, received_sha256,
+                            project_id, json.dumps(handoff_manifest.model_dump(mode="json"), ensure_ascii=False),
+                            "duplicate" if duplicate else "accepted", now(),
+                        ),
+                    )
+            committed = True
+            analysis_job = _ensure_source_analysis_job(project_id)
+
+        result = {
+            "status": "duplicate" if duplicate else "accepted",
+            "duplicate": duplicate,
+            "handoffId": handoff_id,
+            "idempotencyKey": idempotency_key.casefold(),
+            "discoveryRecordId": handoff_manifest.discovery_record_id,
+            "sha256": received_sha256,
+            "projectId": project_id,
+            "analysisJob": analysis_job,
+        }
+        return JSONResponse(status_code=200 if duplicate else 202, content=result)
+    except HTTPException:
+        if not committed and final_path:
+            _remove_child(final_path.parent.parent, PROJECTS_ROOT)
+        raise
+    except Exception as exc:
+        if not committed and final_path:
+            _remove_child(final_path.parent.parent, PROJECTS_ROOT)
+        raise HTTPException(500, "Unable to accept the font handoff.") from exc
+    finally:
+        staged_path.unlink(missing_ok=True)
+        await font.close()
 
 
 @app.delete("/api/projects/{project_id}/source", status_code=204)

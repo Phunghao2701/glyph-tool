@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -100,6 +101,12 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS app_settings (
                 key TEXT PRIMARY KEY, value TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS font_discovery_handoffs (
+                id TEXT PRIMARY KEY, idempotency_key TEXT NOT NULL UNIQUE,
+                discovery_record_id TEXT NOT NULL UNIQUE,
+                sha256 TEXT NOT NULL, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                manifest_json TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS ai_provider_connections (
                 provider_id TEXT PRIMARY KEY, status TEXT NOT NULL, auth_mode TEXT NOT NULL,
                 account_label TEXT, account_subject TEXT, client_id TEXT, scopes_json TEXT NOT NULL DEFAULT '[]',
@@ -108,7 +115,26 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_jobs_project ON jobs(project_id, created_at);
             CREATE INDEX IF NOT EXISTS idx_revisions_variant ON revisions(variant_id, created_at);
             CREATE INDEX IF NOT EXISTS idx_edits_revision ON glyph_edits(revision_id);
+            CREATE INDEX IF NOT EXISTS idx_font_discovery_handoffs_sha ON font_discovery_handoffs(sha256);
             """
+        )
+        handoff_columns = {row["name"] for row in conn.execute("PRAGMA table_info(font_discovery_handoffs)")}
+        if "idempotency_key" not in handoff_columns:
+            conn.execute("ALTER TABLE font_discovery_handoffs ADD COLUMN idempotency_key TEXT")
+            handoffs = conn.execute(
+                "SELECT id,discovery_record_id,sha256 FROM font_discovery_handoffs WHERE idempotency_key IS NULL"
+            ).fetchall()
+            for handoff in handoffs:
+                idempotency_key = hashlib.sha256(
+                    f"{handoff['discovery_record_id']}:{handoff['sha256']}".encode()
+                ).hexdigest()
+                conn.execute(
+                    "UPDATE font_discovery_handoffs SET idempotency_key=? WHERE id=?",
+                    (idempotency_key, handoff["id"]),
+                )
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_font_discovery_handoffs_idempotency "
+            "ON font_discovery_handoffs(idempotency_key)"
         )
         job_columns = {row["name"] for row in conn.execute("PRAGMA table_info(jobs)")}
         if "label" not in job_columns:

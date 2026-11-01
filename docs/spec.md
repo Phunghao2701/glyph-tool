@@ -22,44 +22,40 @@ The application is not a multi-user hosted service. The browser UI is served loc
 
 ## Separate font discovery system
 
-The font search and comparison tool is a **separate application** from VietFont Studio, not another feature or page inside it. It has its own UI, API, catalog connectors, candidate cache, and persistence. It must not read or write VietFont Studio's database, local data directory, or internal APIs.
+The Automated Font Discovery V2 tool is a **separate application** from VietFont Studio, not another feature or page inside it. It owns its UI, API, source connector registry, scheduler, database, AI provider settings, and temporary font storage. It must not share code, databases, local data directories, or internal runtime state with VietFont Studio. The only planned system connection is a narrow, authenticated font-handoff API.
 
-The discovery app searches supported font catalogs, reads the catalog's source and license information, and downloads candidate files into its own temporary storage for format, metadata, and Vietnamese glyph-coverage inspection. It presents real-font previews and side-by-side comparison so users can find fonts that are stylistically useful but lack some required Vietnamese characters. Search and comparison do not require an AI provider.
+Its automated flow manages independently enabled sources, syncs their catalogs, normalizes and deduplicates new/changed font records, downloads permitted candidates to its own temporary storage, and measures actual Vietnamese glyph coverage locally. Candidates with missing Vietnamese characters proceed to AI style analysis, AI-assisted comparison/ranking, automatic selection, and license/import validation. Candidates that already have complete coverage, are unsupported, duplicated, or fail policy gates are skipped, retained in the catalog, or routed for review as appropriate.
 
-The standalone module plan, frontend/backend feature map, API proposal, security rules, and MVP acceptance criteria are in [font-discovery-tool-modules.md](font-discovery-tool-modules.md). That file is a starting blueprint for the separate tool, not a request to add its modules to this repository's running application.
+AI is required for style analysis, comparison, ranking, and automated selection/handoff. Sync, local format inspection, and coverage measurement can continue if the AI provider is unavailable, but those candidates must wait for review and cannot be auto-handed off. AI receives normalized metadata and locally derived descriptors only; font binaries, raw outlines, local paths, and signed download URLs stay out of AI requests.
+
+The standalone feature/module tree, source and scheduler flows, API proposal, security rules, and MVP criteria are in [font-discovery-tool-modules.md](font-discovery-tool-modules.md). It is the blueprint for building the tool in a new, separate directory; whether that directory becomes its own Git repository is an implementation choice. These modules are not part of this running application.
 
 ### Handoff boundary
 
-The proposed first handoff is a selected `.ttf`/`.otf` font plus a small provenance manifest containing the catalog/source URL, catalog identifier when available, family/style metadata, license URL/label, and SHA-256. The user downloads these files and manually imports the font file through VietFont Studio's existing **New Project** flow; the manifest stays beside it for traceability because the current import flow does not ingest sidecar metadata. This keeps both systems independently runnable and avoids hidden cross-database coupling. The exact bundle/download UX can be refined before implementation; a future one-click handoff would require an explicit import contract, not shared storage.
+When the Discovery tool marks a candidate eligible and required user/license review is recorded, its backend sends the selected original `.ttf`/`.otf` and provenance manifest to `POST /api/integrations/font-discovery/handoffs` in VietFont Studio. The endpoint accepts multipart `font` and JSON-text `manifest` fields and requires `Authorization: Bearer <FONT_DISCOVERY_BEARER_TOKEN>` plus the sender's `Idempotency-Key`. It verifies the signature, SHA-256, missing-coverage classification, and review acknowledgements; detects repeated discovery IDs and identical imported bytes; creates or identifies the project/source record; and queues VietFont Studio's existing local analysis. Configure the matching token on both backends only; the Discovery browser must not hold it. See the main README for the complete request and response contract.
 
-Because the systems are separate, the discovery app can detect duplicates in its own candidate cache but cannot query VietFont Studio projects. Carry the content hash in the handoff manifest so a future explicit import contract can support duplicate checks without coupling the databases.
+Neither application may access the other's database or local storage directly. The receiver is disabled until its Bearer token is configured.
 
 ```mermaid
-flowchart LR
-  subgraph Finder[Font Search and Compare — separate application]
-    A[Search terms and filters] --> B[Catalog adapters]
-    B --> C[Normalize metadata, source and license]
-    C --> D{Supported static TTF/OTF?}
-    D -- No --> E[Show as unsupported for VietFont Studio]
-    D -- Yes --> F[Download candidate to Finder temp storage]
-    F --> G[Inspect metadata and Vietnamese coverage locally]
-    G --> H[Preview and compare real font samples]
-    H --> I{Select candidate?}
-    I -- No --> A
-    I -- Yes --> J[Confirm license and prepare font plus provenance manifest]
-  end
-
-  J --> K[User downloads font and provenance manifest]
-
-  subgraph Studio[VietFont Studio — existing, independent application]
-    L[User imports font in New Project]
-    L --> M[Existing local font analysis]
-    M --> N[Connect/select AI provider]
-    N --> O[AI creates VER 1A/1B/1C]
-    O --> P[Review, refine, validate and export]
-  end
-
-  K -. user-selected font file .-> L
+flowchart TD
+  A[Source Management] --> B[Enable selected font sources]
+  B --> C[Automation Orchestrator]
+  C --> D[Independent Source Connectors]
+  D --> E[Scheduled catalog sync]
+  E --> F[Normalize and deduplicate]
+  F --> G[Download permitted font to Discovery temp storage]
+  G --> H[Local format and Vietnamese coverage check]
+  H --> I{Vietnamese characters missing?}
+  I -- No --> J[Skip or retain in catalog]
+  I -- Yes --> K[AI Font Style Analyzer]
+  K --> L[AI Comparison and Ranking]
+  L --> M[Automatic Selection]
+  M --> N[License and Import Validation]
+  N --> O{All policy gates pass?}
+  O -- No --> P[Review, skip, or retain in catalog]
+  O -- Yes --> Q[Authenticated idempotent handoff API]
+  Q --> R[VietFont Studio receiver]
+  R --> S[Revalidate, deduplicate, and queue local analysis]
 ```
 
 ## Product workflow
