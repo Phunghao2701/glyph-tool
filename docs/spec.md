@@ -1,6 +1,6 @@
 # VietFont Studio — Product and Engineering Spec
 
-**Last reviewed:** 2026-10-31
+**Last reviewed:** 2026-11-04
 
 **Purpose:** This is the first document an AI agent or contributor should read to understand the product, its boundaries, and current UX decisions. It replaces reliance on chat history. Verify implementation details against the source files linked below before changing them.
 
@@ -22,7 +22,7 @@ The application is not a multi-user hosted service. The browser UI is served loc
 
 ## Separate font discovery system
 
-The Automated Font Discovery V2 tool is a **separate application** from VietFont Studio, not another feature or page inside it. It owns its UI, API, source connector registry, scheduler, database, AI provider settings, and temporary font storage. It must not share code, databases, local data directories, or internal runtime state with VietFont Studio. The only planned system connection is a narrow, authenticated font-handoff API.
+The Automated Font Discovery V2 tool is a **separate application** from VietFont Studio, not another feature or page inside it. It owns its UI, API, source connector registry, scheduler, database, AI provider settings, and temporary font storage. It must not share code, databases, local data directories, or internal runtime state with VietFont Studio. The systems connect only through two authenticated APIs: a font-handoff API and a read-only list of successfully exported TTF/OTF family names.
 
 Its automated flow manages independently enabled sources, syncs their catalogs, normalizes and deduplicates new/changed font records, downloads permitted candidates to its own temporary storage, and measures actual Vietnamese glyph coverage locally. Candidates with missing Vietnamese characters proceed to AI style analysis, AI-assisted comparison/ranking, automatic selection, and license/import validation. Candidates that already have complete coverage, are unsupported, duplicated, or fail policy gates are skipped, retained in the catalog, or routed for review as appropriate.
 
@@ -34,7 +34,7 @@ The standalone feature/module tree, source and scheduler flows, API proposal, se
 
 When the Discovery tool marks a candidate eligible and required user/license review is recorded, its backend sends the selected original `.ttf`/`.otf` and provenance manifest to `POST /api/integrations/font-discovery/handoffs` in VietFont Studio. The endpoint accepts multipart `font` and JSON-text `manifest` fields and requires `Authorization: Bearer <FONT_DISCOVERY_BEARER_TOKEN>` plus the sender's `Idempotency-Key`. It verifies the signature, SHA-256, missing-coverage classification, and review acknowledgements; detects repeated discovery IDs and identical imported bytes; creates or identifies the project/source record; and queues VietFont Studio's existing local analysis. Configure the matching token on both backends only; the Discovery browser must not hold it. See the main README for the complete request and response contract.
 
-Neither application may access the other's database or local storage directly. The receiver is disabled until its Bearer token is configured.
+Neither application may access the other's database or local storage directly. The receiver is disabled until its Bearer token is configured. Discovery may also call `GET /api/integrations/font-discovery/localized-fonts` with that same token; it returns the source family for successful TTF/OTF exports, preferring project analysis or the original handoff manifest and falling back to the exported font name table. This lets Discovery avoid presenting fonts already localized as missing-coverage candidates. The endpoint returns no binary font data or storage paths.
 
 ```mermaid
 flowchart TD

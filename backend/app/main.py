@@ -26,7 +26,7 @@ from .db import (
     job_payload, json_load, now, project_payload, revision_payload,
 )
 from .export_dedup import find_export_by_identity
-from .font_pipeline import analyze_font, export_filename, normalize_export_filename
+from .font_pipeline import FontPipelineError, analyze_font, export_filename, font_family_from_file, normalize_export_filename
 from .jobs import create_job, shutdown
 from .providers import (
     ProviderError,
@@ -1386,6 +1386,62 @@ def list_exports(project_id: str | None = Query(default=None)) -> dict[str, Any]
         else:
             rows = conn.execute("SELECT * FROM exports ORDER BY created_at DESC").fetchall()
         return {"items": [_export_payload(row) for row in rows]}
+
+
+@app.get("/api/integrations/font-discovery/localized-fonts")
+def list_font_discovery_localized_fonts(
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _require_font_discovery_bearer(authorization)
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT exports.format,exports.file_path,exports.filename,exports.created_at,projects.analysis_json, "
+            "(SELECT manifest_json FROM font_discovery_handoffs "
+            " WHERE project_id=exports.project_id ORDER BY created_at DESC LIMIT 1) AS manifest_json "
+            "FROM exports LEFT JOIN projects ON projects.id=exports.project_id "
+            "WHERE lower(exports.format) IN ('ttf','otf') ORDER BY exports.created_at DESC"
+        ).fetchall()
+
+    export_root = EXPORTS_ROOT.resolve()
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        path = Path(row["file_path"]).resolve()
+        if export_root not in path.parents or not path.is_file():
+            continue
+        try:
+            analysis_payload = json_load(row["analysis_json"], {}) or {}
+            manifest_payload = json_load(row["manifest_json"], {}) or {}
+            analysis = analysis_payload if isinstance(analysis_payload, dict) else {}
+            manifest = manifest_payload if isinstance(manifest_payload, dict) else {}
+            family = analysis.get("family") or manifest.get("family")
+            if not isinstance(family, str) or not family.strip():
+                metadata_family = font_family_from_file(path)
+                family = _fallback_export_family(metadata_family or row["filename"])
+        except FontPipelineError:
+            continue
+        if not family:
+            continue
+        items.append({
+            "family": family,
+            "format": row["format"].lower(),
+            "exported_at": row["created_at"],
+        })
+    return {"items": items, "total": len(items)}
+
+
+def _fallback_export_family(filename: str) -> str | None:
+    stem = Path(filename).stem
+    stem = re.sub(r"(?i)[\s_-]+vietnamese$", "", stem).strip()
+    style_tokens = {
+        "regular", "book", "roman", "bold", "italic", "oblique", "light", "medium",
+        "black", "thin", "extralight", "ultralight", "semibold", "demibold", "extrabold",
+        "ultrabold", "heavy",
+    }
+    parts = re.split(r"[\s_-]+", stem)
+    while parts and parts[-1].casefold() in style_tokens:
+        parts.pop()
+    family = " ".join(parts).strip()
+    return family or None
 
 
 @app.post("/api/jobs", status_code=202)

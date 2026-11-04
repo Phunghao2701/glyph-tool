@@ -86,6 +86,10 @@ Backend kiểm tra token, idempotency key, định dạng/header font, SHA-256, 
 
 Nếu `FONT_DISCOVERY_BEARER_TOKEN` chưa được cấu hình, endpoint trả `503` và không nhận font. Dùng một secret ngẫu nhiên dài, giữ riêng ở backend hai hệ thống, và chỉ gọi qua HTTPS khi hai hệ thống chạy trên các host khác nhau.
 
+## Tra cứu font đã Việt hóa từ Font Discovery
+
+Font Discovery có thể gọi endpoint chỉ đọc `GET /api/integrations/font-discovery/localized-fonts` kèm `Authorization: Bearer <VIETFONT_STUDIO_HANDOFF_TOKEN>`. Endpoint trả family gốc của project có TTF/OTF export thành công, ưu tiên analysis hoặc manifest bàn giao và dùng name table của file export làm phương án dự phòng; không trả font binary hay đường dẫn lưu trữ. Endpoint dùng chung token `FONT_DISCOVERY_BEARER_TOKEN` với API nhận bàn giao.
+
 ## Luồng MVP
 
 1. Tạo project và tải lên font.

@@ -34,6 +34,22 @@ def normalize_export_filename(filename: str) -> str:
     return unicodedata.normalize("NFKC", filename).strip().casefold()
 
 
+def font_family_from_file(path: str | Path) -> str | None:
+    font: TTFont | None = None
+    try:
+        font = TTFont(Path(path), lazy=True)
+        if "name" not in font:
+            return None
+        names = font["name"]
+        family = names.getDebugName(16) or names.getDebugName(1)
+        return family.strip() if family and family.strip() else None
+    except Exception as exc:
+        raise FontPipelineError(f"Could not read font family: {exc}") from exc
+    finally:
+        if font is not None:
+            font.close()
+
+
 Progress = Callable[[int, str], None]
 # Keep this in sync with tools/kiemword.py: 67 lowercase Vietnamese letters.
 VN_LOWER = "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ"
